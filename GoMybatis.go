@@ -5,7 +5,7 @@ import (
 	"github.com/agui2200/GoMybatis/ast"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/utils"
-	xml2 "github.com/agui2200/GoMybatis/xml"
+	"github.com/agui2200/GoMybatis/xml"
 	"github.com/beevik/etree"
 	"log"
 	"reflect"
@@ -26,22 +26,22 @@ func New() GoMybatisEngine {
 
 //推荐默认使用单例传入
 //根据sessionEngine写入到mapperPtr，value:指向mapper指针反射对象，xml：xml数据，sessionEngine：session引擎，enableLog:是否允许日志输出，log：日志实现
-func WriteMapperByValue(value reflect.Value, xml []byte, sessionEngine SessionEngine) {
+func WriteMapperByValue(value reflect.Value, xmlBuffer []byte, sessionEngine SessionEngine) {
 	if value.Kind() != reflect.Ptr {
 		panic("AopProxy: AopProxy arg must be a pointer")
 	}
-	WriteMapper(value, xml, sessionEngine)
+	WriteMapper(value, xmlBuffer, sessionEngine)
 	sessionEngine.RegisterObj(value.Interface(), value.Type().Elem().Name())
 }
 
 //推荐默认使用单例传入
 //根据sessionEngine写入到mapperPtr，ptr:指向mapper指针，xml：xml数据，sessionEngine：session引擎，enableLog:是否允许日志输出，log：日志实现
-func WriteMapperPtrByEngine(ptr interface{}, xml []byte, sessionEngine SessionEngine) {
+func WriteMapperPtrByEngine(ptr interface{}, xmlBuffer []byte, sessionEngine SessionEngine) {
 	v := reflect.ValueOf(ptr)
 	if v.Kind() != reflect.Ptr {
 		panic("AopProxy: AopProxy arg must be a pointer")
 	}
-	WriteMapperByValue(v, xml, sessionEngine)
+	WriteMapperByValue(v, xmlBuffer, sessionEngine)
 }
 
 //写入方法内容，例如
@@ -55,9 +55,9 @@ func WriteMapperPtrByEngine(ptr interface{}, xml []byte, sessionEngine SessionEn
 //func的基本类型的参数（例如string,int,time.Time,int64,float....）个数无限制(并且需要用Tag指定参数名逗号隔开,例如`mapperParams:"id,phone"`)，返回值必须有error
 //func的结构体参数无需指定mapperParams的tag，框架会自动扫描它的属性，封装为map处理掉
 //使用WriteMapper函数设置代理后即可正常使用。
-func WriteMapper(bean reflect.Value, xml []byte, sessionEngine SessionEngine) {
+func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine SessionEngine) {
 	beanCheck(bean)
-	var mapperTree = xml2.LoadMapperXml(xml)
+	var mapperTree = xml.LoadMapperXml(xmlBuffer)
 	sessionEngine.TempleteDecoder().DecodeTree(mapperTree, bean.Type())
 	//构建期使用的map，无需考虑并发安全
 	var methodXmlMap = makeMethodXmlMap(bean, mapperTree, sessionEngine.SqlBuilder())
@@ -78,7 +78,7 @@ func WriteMapper(bean reflect.Value, xml []byte, sessionEngine SessionEngine) {
 		var resultMap map[string]*sqlbuilder.ResultProperty
 
 		if funcName != NewSessionFunc {
-			var resultMapId = mapper.xml.SelectAttrValue(xml2.Element_ResultMap, "")
+			var resultMapId = mapper.xml.SelectAttrValue(xml.Element_ResultMap, "")
 			if resultMapId != "" {
 				resultMap = resultMaps[resultMapId]
 			}
@@ -231,7 +231,7 @@ func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*sqlbuild
 		var typeString = reflect.TypeOf(item).String()
 		if typeString == "*etree.Element" {
 			var xmlItem = item.(*etree.Element)
-			if xmlItem.Tag == xml2.Element_ResultMap {
+			if xmlItem.Tag == xml.Element_ResultMap {
 				var resultPropertyMap = make(map[string]*sqlbuilder.ResultProperty)
 				for _, elementItem := range xmlItem.ChildElements() {
 					var property = sqlbuilder.ResultProperty{
@@ -329,7 +329,7 @@ func findMapperXml(mapperTree map[string]etree.Token, methodName string) *etree.
 	return nil
 }
 
-func exeMethodByXml(elementType xml2.ElementType, beanName string, sessionEngine SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*sqlbuilder.ResultProperty, returnValue *reflect.Value) error {
+func exeMethodByXml(elementType xml.ElementType, beanName string, sessionEngine SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*sqlbuilder.ResultProperty, returnValue *reflect.Value) error {
 	//TODO　CallBack and Session must Location in build step!
 	var session Session
 	var sql string
@@ -361,7 +361,7 @@ func exeMethodByXml(elementType xml2.ElementType, beanName string, sessionEngine
 	}
 	var haveLastReturnValue = returnValue != nil && (*returnValue).IsNil() == false
 	//do CRUD
-	if elementType == xml2.Element_Select && haveLastReturnValue {
+	if elementType == xml.Element_Select && haveLastReturnValue {
 		//is select and have return value
 		if sessionEngine.LogEnable() {
 			sessionEngine.LogSystem().SendLog("[GoMybatis] [", session.Id(), "] Query ==> "+sql)
