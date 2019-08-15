@@ -1,4 +1,4 @@
-package GoMybatis
+package xml
 
 type ElementType = string
 
@@ -31,7 +31,7 @@ const (
 	Element_Include   ElementType = "include"
 )
 
-func isMethodElement(tag ElementType) bool {
+func IsMethodElement(tag ElementType) bool {
 	switch tag {
 	case Element_Insert, Element_Delete, Element_Update, Element_Select,
 		Element_Insert_Templete, Element_Delete_Templete, Element_Update_Templete, Element_Select_Templete:

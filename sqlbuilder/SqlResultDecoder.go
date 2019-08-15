@@ -1,4 +1,4 @@
-package GoMybatis
+package sqlbuilder
 
 import (
 	"github.com/agui2200/GoMybatis/utils"
@@ -9,7 +9,6 @@ import (
 )
 
 type GoMybatisSqlResultDecoder struct {
-	SqlResultDecoder
 }
 
 func (it GoMybatisSqlResultDecoder) Decode(resultMap map[string]*ResultProperty, sqlResult []map[string][]byte, result interface{}) error {

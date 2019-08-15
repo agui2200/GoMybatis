@@ -1,4 +1,4 @@
-package GoMybatis
+package cache
 
 //Lexer 结果缓存
 type ExpressionEngineLexerCache interface {

@@ -3,6 +3,7 @@ package GoMybatis
 import (
 	"database/sql"
 	"github.com/agui2200/GoMybatis/ast"
+	"github.com/agui2200/GoMybatis/logger"
 	"github.com/agui2200/GoMybatis/tx"
 )
 
@@ -44,22 +45,16 @@ type SessionEngine interface {
 	SetLogEnable(enable bool)
 
 	//获取日志实现类
-	Log() Log
+	Log() logger.Log
 
 	//设置日志实现类
-	SetLog(log Log)
+	SetLog(log logger.Log)
 
 	//session工厂
 	SessionFactory() *SessionFactory
 
 	//设置session工厂
 	SetSessionFactory(factory *SessionFactory)
-
-	//sql类型转换器
-	SqlArgTypeConvert() ast.SqlArgTypeConvert
-
-	//设置sql类型转换器
-	SetSqlArgTypeConvert(convert ast.SqlArgTypeConvert)
 
 	//表达式执行引擎
 	ExpressionEngine() ast.ExpressionEngine
@@ -98,5 +93,5 @@ type SessionEngine interface {
 	//是否启用goroutineIDEnable（注意（该方法需要在多协程环境下调用）启用会从栈获取协程id，有一定性能消耗，换取最大的事务定义便捷）
 	GoroutineIDEnable() bool
 
-	LogSystem() *LogSystem
+	LogSystem() *logger.LogSystem
 }

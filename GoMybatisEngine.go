@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"github.com/agui2200/GoMybatis/ast"
 	"github.com/agui2200/GoMybatis/engines"
+	"github.com/agui2200/GoMybatis/logger"
+	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/utils"
 	"reflect"
 	"sync"
@@ -15,28 +17,27 @@ type GoMybatisEngine struct {
 
 	objMap map[string]interface{}
 
-	dataSourceRouter    DataSourceRouter      //动态数据源路由器
-	log                 Log                   //日志实现类
-	logEnable           bool                  //是否允许日志输出（默认开启）
-	logSystem           *LogSystem            //日志发送系统
-	sessionFactory      *SessionFactory       //session 工厂
-	sqlArgTypeConvert   ast.SqlArgTypeConvert //sql参数转换
-	expressionEngine    ast.ExpressionEngine  //表达式解析引擎
-	sqlBuilder          SqlBuilder            //sql 构建
-	sqlResultDecoder    SqlResultDecoder      //sql查询结果解析引擎
-	templeteDecoder     TempleteDecoder       //模板解析引擎
-	goroutineSessionMap *GoroutineSessionMap  //map[协程id]Session
-	goroutineIDEnable   bool                  //是否启用goroutineIDEnable（注意（该方法需要在多协程环境下调用）启用会从栈获取协程id，有一定性能消耗，换取最大的事务定义便捷,单线程处理场景可以关闭此配置）
+	dataSourceRouter    DataSourceRouter     //动态数据源路由器
+	log                 logger.Log           //日志实现类
+	logEnable           bool                 //是否允许日志输出（默认开启）
+	logSystem           *logger.LogSystem    //日志发送系统
+	sessionFactory      *SessionFactory      //session 工厂
+	expressionEngine    ast.ExpressionEngine //表达式解析引擎
+	sqlBuilder          SqlBuilder           //sql 构建
+	sqlResultDecoder    SqlResultDecoder     //sql查询结果解析引擎
+	templeteDecoder     TempleteDecoder      //模板解析引擎
+	goroutineSessionMap *GoroutineSessionMap //map[协程id]Session
+	goroutineIDEnable   bool                 //是否启用goroutineIDEnable（注意（该方法需要在多协程环境下调用）启用会从栈获取协程id，有一定性能消耗，换取最大的事务定义便捷,单线程处理场景可以关闭此配置）
 }
 
 func (it GoMybatisEngine) New() GoMybatisEngine {
 	it.logEnable = true
 	it.isInit = true
 	if it.logEnable == true && it.log == nil {
-		it.log = &LogStandard{}
+		it.log = &logger.LogStandard{}
 	}
 	if it.logEnable {
-		var logSystem, err = LogSystem{}.New(it.log, it.log.QueueLen())
+		var logSystem, err = logger.LogSystem{}.New(it.log, it.log.QueueLen())
 		if err != nil {
 			panic(err)
 		}
@@ -46,22 +47,18 @@ func (it GoMybatisEngine) New() GoMybatisEngine {
 		var newRouter = GoMybatisDataSourceRouter{}.New(nil)
 		it.SetDataSourceRouter(&newRouter)
 	}
-	if it.sqlArgTypeConvert == nil {
-		it.sqlArgTypeConvert = GoMybatisSqlArgTypeConvert{}
-	}
 	if it.expressionEngine == nil {
 		it.expressionEngine = &engines.ExpressionEngineGoExpress{}
 	}
 	if it.sqlResultDecoder == nil {
-		it.sqlResultDecoder = GoMybatisSqlResultDecoder{}
+		it.sqlResultDecoder = sqlbuilder.GoMybatisSqlResultDecoder{}
 	}
 	if it.templeteDecoder == nil {
 		it.SetTempleteDecoder(&GoMybatisTempleteDecoder{})
 	}
 
 	if it.sqlBuilder == nil {
-		var expressionEngineProxy = ExpressionEngineProxy{}.New(it.ExpressionEngine(), true)
-		var builder = GoMybatisSqlBuilder{}.New(it.SqlArgTypeConvert(), expressionEngineProxy, it.Log(), it.LogEnable())
+		var builder = sqlbuilder.New(it.ExpressionEngine(), it.logEnable, it.Log())
 		it.sqlBuilder = &builder
 	}
 
@@ -122,13 +119,13 @@ func (it *GoMybatisEngine) SetLogEnable(enable bool) {
 }
 
 //获取日志实现类
-func (it *GoMybatisEngine) Log() Log {
+func (it *GoMybatisEngine) Log() logger.Log {
 	it.initCheck()
 	return it.log
 }
 
 //设置日志实现类
-func (it *GoMybatisEngine) SetLog(log Log) {
+func (it *GoMybatisEngine) SetLog(log logger.Log) {
 	it.initCheck()
 	it.log = log
 }
@@ -143,18 +140,6 @@ func (it *GoMybatisEngine) SessionFactory() *SessionFactory {
 func (it *GoMybatisEngine) SetSessionFactory(factory *SessionFactory) {
 	it.initCheck()
 	it.sessionFactory = factory
-}
-
-//sql类型转换器
-func (it *GoMybatisEngine) SqlArgTypeConvert() ast.SqlArgTypeConvert {
-	it.initCheck()
-	return it.sqlArgTypeConvert
-}
-
-//设置sql类型转换器
-func (it *GoMybatisEngine) SetSqlArgTypeConvert(convert ast.SqlArgTypeConvert) {
-	it.initCheck()
-	it.sqlArgTypeConvert = convert
 }
 
 //表达式执行引擎
@@ -241,6 +226,6 @@ func (it *GoMybatisEngine) GoroutineIDEnable() bool {
 	return it.goroutineIDEnable
 }
 
-func (it *GoMybatisEngine) LogSystem() *LogSystem {
+func (it *GoMybatisEngine) LogSystem() *logger.LogSystem {
 	return it.logSystem
 }

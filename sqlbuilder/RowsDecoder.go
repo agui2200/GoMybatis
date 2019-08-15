@@ -1,4 +1,4 @@
-package GoMybatis
+package sqlbuilder
 
 import (
 	"database/sql"
@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-func rows2maps(rows *sql.Rows) (resultsSlice []map[string][]byte, err error) {
+func Rows2maps(rows *sql.Rows) (resultsSlice []map[string][]byte, err error) {
 	fields, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
-		result, err := row2map(rows, fields)
+		result, err := Row2map(rows, fields)
 		if err != nil {
 			return nil, err
 		}
@@ -23,7 +23,7 @@ func rows2maps(rows *sql.Rows) (resultsSlice []map[string][]byte, err error) {
 	return resultsSlice, nil
 }
 
-func row2map(rows *sql.Rows, fields []string) (resultsMap map[string][]byte, err error) {
+func Row2map(rows *sql.Rows, fields []string) (resultsMap map[string][]byte, err error) {
 	result := make(map[string][]byte)
 	scanResultContainers := make([]interface{}, len(fields))
 	for i := 0; i < len(fields); i++ {

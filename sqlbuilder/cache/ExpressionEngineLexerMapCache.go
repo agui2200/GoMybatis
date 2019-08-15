@@ -1,4 +1,4 @@
-package GoMybatis
+package cache
 
 import (
 	"github.com/agui2200/GoMybatis/utils"

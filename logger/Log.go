@@ -1,4 +1,4 @@
-package GoMybatis
+package logger
 
 type Log interface {
 	QueueLen() int           //日志消息队列长度

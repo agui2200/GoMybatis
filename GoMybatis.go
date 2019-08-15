@@ -3,7 +3,9 @@ package GoMybatis
 import (
 	"bytes"
 	"github.com/agui2200/GoMybatis/ast"
+	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/utils"
+	xml2 "github.com/agui2200/GoMybatis/xml"
 	"github.com/beevik/etree"
 	"log"
 	"reflect"
@@ -55,7 +57,7 @@ func WriteMapperPtrByEngine(ptr interface{}, xml []byte, sessionEngine SessionEn
 //使用WriteMapper函数设置代理后即可正常使用。
 func WriteMapper(bean reflect.Value, xml []byte, sessionEngine SessionEngine) {
 	beanCheck(bean)
-	var mapperTree = LoadMapperXml(xml)
+	var mapperTree = xml2.LoadMapperXml(xml)
 	sessionEngine.TempleteDecoder().DecodeTree(mapperTree, bean.Type())
 	//构建期使用的map，无需考虑并发安全
 	var methodXmlMap = makeMethodXmlMap(bean, mapperTree, sessionEngine.SqlBuilder())
@@ -73,10 +75,10 @@ func WriteMapper(bean reflect.Value, xml []byte, sessionEngine SessionEngine) {
 		//mapper
 		var mapper = methodXmlMap[funcName]
 		//resultMaps
-		var resultMap map[string]*ResultProperty
+		var resultMap map[string]*sqlbuilder.ResultProperty
 
 		if funcName != NewSessionFunc {
-			var resultMapId = mapper.xml.SelectAttrValue(Element_ResultMap, "")
+			var resultMapId = mapper.xml.SelectAttrValue(xml2.Element_ResultMap, "")
 			if resultMapId != "" {
 				resultMap = resultMaps[resultMapId]
 			}
@@ -223,16 +225,16 @@ func makeReturnTypeMap(value reflect.Type) (returnMap map[string]*ReturnType) {
 }
 
 //map[id]map[cloum]Property
-func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*ResultProperty {
-	var resultMaps = make(map[string]map[string]*ResultProperty)
+func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*sqlbuilder.ResultProperty {
+	var resultMaps = make(map[string]map[string]*sqlbuilder.ResultProperty)
 	for _, item := range xmls {
 		var typeString = reflect.TypeOf(item).String()
 		if typeString == "*etree.Element" {
 			var xmlItem = item.(*etree.Element)
-			if xmlItem.Tag == Element_ResultMap {
-				var resultPropertyMap = make(map[string]*ResultProperty)
+			if xmlItem.Tag == xml2.Element_ResultMap {
+				var resultPropertyMap = make(map[string]*sqlbuilder.ResultProperty)
 				for _, elementItem := range xmlItem.ChildElements() {
-					var property = ResultProperty{
+					var property = sqlbuilder.ResultProperty{
 						XMLName:  elementItem.Tag,
 						Column:   elementItem.SelectAttrValue("column", ""),
 						Property: elementItem.SelectAttrValue("property", ""),
@@ -327,7 +329,7 @@ func findMapperXml(mapperTree map[string]etree.Token, methodName string) *etree.
 	return nil
 }
 
-func exeMethodByXml(elementType ElementType, beanName string, sessionEngine SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*ResultProperty, returnValue *reflect.Value) error {
+func exeMethodByXml(elementType xml2.ElementType, beanName string, sessionEngine SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*sqlbuilder.ResultProperty, returnValue *reflect.Value) error {
 	//TODO　CallBack and Session must Location in build step!
 	var session Session
 	var sql string
@@ -359,7 +361,7 @@ func exeMethodByXml(elementType ElementType, beanName string, sessionEngine Sess
 	}
 	var haveLastReturnValue = returnValue != nil && (*returnValue).IsNil() == false
 	//do CRUD
-	if elementType == Element_Select && haveLastReturnValue {
+	if elementType == xml2.Element_Select && haveLastReturnValue {
 		//is select and have return value
 		if sessionEngine.LogEnable() {
 			sessionEngine.LogSystem().SendLog("[GoMybatis] [", session.Id(), "] Query ==> "+sql)

@@ -1,4 +1,4 @@
-package GoMybatis
+package xml
 
 import (
 	"fmt"
@@ -47,7 +47,7 @@ func TestUserAddres(t *testing.T)  {
 	var s=utils.CreateDefaultXml("biz_user_address",TestActivity{})//创建xml内容
 	utils.OutPutXml("D:/GOPATH/src/dao/ActivityMapper.xml",[]byte(s))//写入磁盘
 }
- */
+*/
 //根据结构体 创建xml文件
 func CreateXml(tableName string, bean interface{}) []byte {
 	var content = ""

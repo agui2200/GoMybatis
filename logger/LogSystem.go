@@ -1,4 +1,4 @@
-package GoMybatis
+package logger
 
 import (
 	"bytes"

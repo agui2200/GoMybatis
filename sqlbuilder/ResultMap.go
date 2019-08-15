@@ -1,4 +1,4 @@
-package GoMybatis
+package sqlbuilder
 
 type ResultProperty struct {
 	XMLName  string //`xml:"result/id"`

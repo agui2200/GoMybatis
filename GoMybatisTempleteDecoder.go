@@ -3,6 +3,7 @@ package GoMybatis
 import (
 	"bytes"
 	"github.com/agui2200/GoMybatis/utils"
+	"github.com/agui2200/GoMybatis/xml"
 	"github.com/beevik/etree"
 	"reflect"
 	"strconv"
@@ -46,7 +47,7 @@ func (it *GoMybatisTempleteDecoder) DecodeTree(tree map[string]etree.Token, bean
 		if v, o := item.(*etree.Element); o {
 			var method *reflect.StructField
 			if beanType != nil {
-				if isMethodElement(v.Tag) {
+				if xml.IsMethodElement(v.Tag) {
 					var upperId = utils.UpperFieldFirstName(v.SelectAttrValue("id", ""))
 					if upperId == "" {
 						upperId = utils.UpperFieldFirstName(v.Tag)
@@ -105,7 +106,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 	switch mapper.Tag {
 
 	case "selectTemplete":
-		mapper.Tag = Element_Select
+		mapper.Tag = xml.Element_Select
 
 		var id = mapper.SelectAttrValue("id", "")
 		if id == "" {
@@ -146,7 +147,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		}
 		break
 	case "insertTemplete": //已支持批量
-		mapper.Tag = Element_Insert
+		mapper.Tag = xml.Element_Insert
 
 		var id = mapper.SelectAttrValue("id", "")
 		if id == "" {
@@ -185,7 +186,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 
 		//add insert column
 		var trimColumn = etree.Element{
-			Tag: Element_Trim,
+			Tag: xml.Element_Trim,
 			Attr: []etree.Attr{
 				{Key: "prefix", Value: "("},
 				{Key: "suffix", Value: ")"},
@@ -207,7 +208,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 			for _, v := range resultMapData.ChildElements() {
 				if collectionName == "" && inserts == "*?*" {
 					trimColumn.Child = append(trimColumn.Child, &etree.Element{
-						Tag: Element_If,
+						Tag: xml.Element_If,
 						Attr: []etree.Attr{
 							{Key: "test", Value: it.makeIfNotNull(v.SelectAttrValue("property", ""))},
 						},
@@ -229,7 +230,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 
 		//args
 		var tempElement = etree.Element{
-			Tag:   Element_Trim,
+			Tag:   xml.Element_Trim,
 			Attr:  []etree.Attr{{Key: "prefix", Value: "values ("}, {Key: "suffix", Value: ")"}, {Key: "suffixOverrides", Value: ","}},
 			Child: []etree.Token{},
 		}
@@ -244,7 +245,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 				}
 				if inserts == "*?*" {
 					tempElement.Child = append(tempElement.Child, &etree.Element{
-						Tag:  Element_If,
+						Tag:  xml.Element_If,
 						Attr: []etree.Attr{{Key: "test", Value: it.makeIfNotNull(v.SelectAttrValue("property", ""))}},
 						Child: []etree.Token{
 							&etree.CharData{
@@ -260,7 +261,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 			}
 		} else {
 			tempElement.Attr = []etree.Attr{}
-			tempElement.Tag = Element_Foreach
+			tempElement.Tag = xml.Element_Foreach
 			tempElement.Attr = []etree.Attr{{Key: "open", Value: "values "}, {Key: "close", Value: ""}, {Key: "separator", Value: ","}, {Key: "collection", Value: collectionName}}
 			tempElement.Child = []etree.Token{}
 			for index, v := range resultMapData.ChildElements() {
@@ -310,7 +311,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 
 		break
 	case "updateTemplete":
-		mapper.Tag = Element_Update
+		mapper.Tag = xml.Element_Update
 
 		var id = mapper.SelectAttrValue("id", "")
 		if id == "" {
@@ -373,7 +374,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		}
 		break
 	case "deleteTemplete":
-		mapper.Tag = Element_Delete
+		mapper.Tag = xml.Element_Delete
 
 		var id = mapper.SelectAttrValue("id", "")
 		if id == "" {
@@ -448,7 +449,7 @@ func checkTablesValue(mapper *etree.Element, tables *string, resultMapData *etre
 //解码逗号分隔的where
 func (it *GoMybatisTempleteDecoder) DecodeWheres(arg string, mapper *etree.Element, logic LogicDeleteData, versionData *VersionData) {
 	var whereRoot = &etree.Element{
-		Tag:   Element_where,
+		Tag:   xml.Element_where,
 		Attr:  []etree.Attr{},
 		Child: []etree.Token{},
 	}
@@ -487,7 +488,7 @@ func (it *GoMybatisTempleteDecoder) DecodeWheres(arg string, mapper *etree.Eleme
 			newWheres.WriteString(expressions[1])
 
 			item = &etree.Element{
-				Tag:   Element_If,
+				Tag:   xml.Element_If,
 				Attr:  []etree.Attr{{Key: "test", Value: it.makeIfNotNull(expressions[0])}},
 				Child: []etree.Token{&etree.CharData{Data: appendAdd + newWheres.String()}},
 			}
@@ -518,7 +519,7 @@ func (it *GoMybatisTempleteDecoder) DecodeSets(arg string, mapper *etree.Element
 			}
 			newWheres.WriteString(expressions[1])
 			var item = &etree.Element{
-				Tag:  Element_If,
+				Tag:  xml.Element_If,
 				Attr: []etree.Attr{{Key: "test", Value: it.makeIfNotNull(expressions[0])}},
 			}
 			item.SetText(newWheres.String())

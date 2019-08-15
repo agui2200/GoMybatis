@@ -1,4 +1,4 @@
-package GoMybatis
+package xml
 
 import (
 	"github.com/agui2200/GoMybatis/utils"

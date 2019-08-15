@@ -1,12 +1,13 @@
-package GoMybatis
+package sqlbuilder
 
 import (
 	"github.com/agui2200/GoMybatis/ast"
+	"github.com/agui2200/GoMybatis/sqlbuilder/cache"
 	"github.com/agui2200/GoMybatis/utils"
 )
 
 type ExpressionEngineProxy struct {
-	expressionEngineLexerCache ExpressionEngineLexerCache //lexer缓存接口，默认使用ExpressionEngineLexerMapCache
+	expressionEngineLexerCache cache.ExpressionEngineLexerCache //lexer缓存接口，默认使用ExpressionEngineLexerMapCache
 	expressionEngine           ast.ExpressionEngine
 	lexerCacheable             bool //是否使用lexer缓存,默认false
 }
@@ -18,8 +19,8 @@ func (ExpressionEngineProxy) New(engine ast.ExpressionEngine, useLexerCache bool
 		lexerCacheable:   useLexerCache,
 	}
 	if it.expressionEngineLexerCache == nil {
-		var cache = ExpressionEngineLexerMapCache{}.New()
-		it.SetLexerCache(&cache)
+		var c = cache.ExpressionEngineLexerMapCache{}.New()
+		it.SetLexerCache(&c)
 	}
 	return it
 }
@@ -76,12 +77,12 @@ func (it *ExpressionEngineProxy) Eval(lexerResult interface{}, arg interface{}, 
 	return it.expressionEngine.Eval(lexerResult, arg, operation)
 }
 
-func (it *ExpressionEngineProxy) LexerCache() ExpressionEngineLexerCache {
+func (it *ExpressionEngineProxy) LexerCache() cache.ExpressionEngineLexerCache {
 	return it.expressionEngineLexerCache
 }
 
-func (it *ExpressionEngineProxy) SetLexerCache(cache ExpressionEngineLexerCache) {
-	it.expressionEngineLexerCache = cache
+func (it *ExpressionEngineProxy) SetLexerCache(c cache.ExpressionEngineLexerCache) {
+	it.expressionEngineLexerCache = c
 }
 
 func (it *ExpressionEngineProxy) SetUseLexerCache(isUseCache bool) error {

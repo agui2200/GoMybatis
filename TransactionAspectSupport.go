@@ -2,6 +2,7 @@ package GoMybatis
 
 import (
 	"fmt"
+	"github.com/agui2200/GoMybatis/logger"
 	"github.com/agui2200/GoMybatis/tx"
 	"github.com/agui2200/GoMybatis/utils"
 	"reflect"
@@ -85,7 +86,7 @@ func AopProxyServiceValue(service reflect.Value, engine SessionEngine) {
 	})
 }
 
-func doNativeMethod(funcField reflect.StructField, arg ProxyArg, nativeImplFunc reflect.Value, session Session, log Log) []reflect.Value {
+func doNativeMethod(funcField reflect.StructField, arg ProxyArg, nativeImplFunc reflect.Value, session Session, log logger.Log) []reflect.Value {
 	defer func() {
 		err := recover()
 		if err != nil {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/agui2200/GoMybatis/example"
 	"github.com/agui2200/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/xml"
 	"testing"
 	"time"
 )
@@ -56,7 +57,7 @@ func initMapper() {
 
 	var err error
 
-	var xmlItems = LoadMapperXml(bytes)
+	var xmlItems = xml.LoadMapperXml(bytes)
 	if xmlItems == nil {
 		panic(`Test_Load_Xml fail,LoadMapperXml "example/Example_ActivityMapper.xml"`)
 	}
@@ -269,7 +270,7 @@ func initMapperTest() {
 
 	var err error
 
-	var xmlItems = LoadMapperXml(bytes)
+	var xmlItems = xml.LoadMapperXml(bytes)
 	if xmlItems == nil {
 		panic(`Test_Load_Xml fail,LoadMapperXml "example/Example_ActivityMapper.xml"`)
 	}

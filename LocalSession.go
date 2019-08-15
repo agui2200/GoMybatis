@@ -3,6 +3,8 @@ package GoMybatis
 import (
 	"database/sql"
 	"errors"
+	"github.com/agui2200/GoMybatis/logger"
+	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/tx"
 	"github.com/agui2200/GoMybatis/utils"
 	"strconv"
@@ -20,10 +22,10 @@ type LocalSession struct {
 	isClosed        bool
 	newLocalSession *LocalSession
 
-	logSystem Log
+	logSystem logger.Log
 }
 
-func (it LocalSession) New(driver string, url string, db *sql.DB, logSystem Log) LocalSession {
+func (it LocalSession) New(driver string, url string, db *sql.DB, logSystem logger.Log) LocalSession {
 	return LocalSession{
 		SessionId: utils.CreateUUID(),
 		db:        db,
@@ -297,7 +299,7 @@ func (it *LocalSession) Query(sqlorArgs string) ([]map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	} else {
-		return rows2maps(rows)
+		return sqlbuilder.Rows2maps(rows)
 	}
 	return nil, nil
 }

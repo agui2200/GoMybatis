@@ -1,4 +1,4 @@
-package GoMybatis
+package xml
 
 import (
 	"testing"
