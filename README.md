@@ -286,19 +286,6 @@ go run XmlCreateTool.go
  
 
 
-## 配套生态(RPC,JSONRPC,Consul)-搭配GoMybatis
-* https://github.com/zhuxiujia/easy_mvc //mvc,极大简化开发流程
-* https://github.com/zhuxiujia/easyrpc  //easyrpc（基于标准库的RPC）吸收GoMybatis的概念，类似标准库的api，定义服务没有标准库的要求那么严格（可选不传参数，或者只有一个参数，只有一个返回值）
-* https://github.com/zhuxiujia/easyrpc_discovery  //基于easyrpc定制微服务发现，支持动态代理，支持GoMybatis事务，AOP代理，事务嵌套，tag定义事务，自带负载均衡算法（随机，加权轮询，源地址哈希法）
-![Image text](https://zhuxiujia.github.io/gomybatis.io/assets/easy_consul.png)
 
 
 
-
-
-
-
-## 请及时关注版本，及时升级版本(新的功能，bug修复) ，使用GoMybatis的项目请在Issues里留言您的项目名称+联系方式
-
-## 喜欢的老铁欢迎在右上角点下 star 关注和赞助我们哈
-![Image text](https://zhuxiujia.github.io/gomybatis.io/assets/wx_account.jpg)
