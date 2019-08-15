@@ -2,8 +2,8 @@ package GoMybatis
 
 import (
 	"fmt"
-	"github.com/zhuxiujia/GoMybatis/example"
-	"github.com/zhuxiujia/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/example"
+	"github.com/agui2200/GoMybatis/tx"
 	"testing"
 	"time"
 )
@@ -232,11 +232,9 @@ func TestGoMybatisTempleteDecoder_Delete(t *testing.T) {
 	time.Sleep(time.Second)
 }
 
-func TestInit(t *testing.T)  {
+func TestInit(t *testing.T) {
 	initMapperTest()
 }
-
-
 
 func initMapperTest() {
 	bytes := []byte(`<?xml version="1.0" encoding="UTF-8"?>

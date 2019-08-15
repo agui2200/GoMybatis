@@ -1,8 +1,8 @@
 package GoMybatis
 
 import (
-	"github.com/zhuxiujia/GoMybatis/utils"
 	"bytes"
+	"github.com/agui2200/GoMybatis/utils"
 )
 
 type LogSystem struct {

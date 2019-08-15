@@ -1,14 +1,14 @@
 package GoMybatis
 
 import (
-	"github.com/zhuxiujia/GoMybatis/ast"
+	"github.com/agui2200/GoMybatis/ast"
 )
 
 type GoMybatisSqlBuilder struct {
 	sqlArgTypeConvert     ast.SqlArgTypeConvert
 	expressionEngineProxy ExpressionEngineProxy
 	enableLog             bool
-	nodeParser ast.NodeParser
+	nodeParser            ast.NodeParser
 }
 
 func (it *GoMybatisSqlBuilder) ExpressionEngineProxy() *ExpressionEngineProxy {
@@ -47,7 +47,6 @@ func (it *GoMybatisSqlBuilder) SetEnableLog(enable bool) {
 func (it *GoMybatisSqlBuilder) EnableLog() bool {
 	return it.enableLog
 }
-
 
 func (it *GoMybatisSqlBuilder) NodeParser() ast.NodeParser {
 	return it.nodeParser

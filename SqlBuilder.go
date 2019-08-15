@@ -1,6 +1,6 @@
 package GoMybatis
 
-import "github.com/zhuxiujia/GoMybatis/ast"
+import "github.com/agui2200/GoMybatis/ast"
 
 //sql文本构建
 type SqlBuilder interface {

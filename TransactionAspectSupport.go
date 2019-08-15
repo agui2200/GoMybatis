@@ -2,8 +2,8 @@ package GoMybatis
 
 import (
 	"fmt"
-	"github.com/zhuxiujia/GoMybatis/tx"
-	"github.com/zhuxiujia/GoMybatis/utils"
+	"github.com/agui2200/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/utils"
 	"reflect"
 	"strings"
 )
@@ -60,7 +60,7 @@ func AopProxyServiceValue(service reflect.Value, engine SessionEngine) {
 				if err != nil {
 					panic(err)
 				}
-			}else{
+			} else {
 				var err = session.Begin(&propagation)
 				if err != nil {
 					panic(err)

@@ -2,9 +2,9 @@ package GoMybatis
 
 import (
 	"bytes"
-	"github.com/zhuxiujia/GoMybatis/ast"
-	"github.com/zhuxiujia/GoMybatis/lib/github.com/beevik/etree"
-	"github.com/zhuxiujia/GoMybatis/utils"
+	"github.com/agui2200/GoMybatis/ast"
+	"github.com/agui2200/GoMybatis/utils"
+	"github.com/beevik/etree"
 	"log"
 	"reflect"
 	"strconv"
@@ -16,6 +16,10 @@ const NewSessionFunc = "NewSession" //NewSession method,auto write implement bod
 type Mapper struct {
 	xml   *etree.Element
 	nodes []ast.Node
+}
+
+func New() GoMybatisEngine {
+	return GoMybatisEngine{}.New()
 }
 
 //推荐默认使用单例传入

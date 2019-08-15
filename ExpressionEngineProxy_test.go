@@ -1,9 +1,9 @@
 package GoMybatis
 
 import (
-	"github.com/zhuxiujia/GoMybatis/engines"
-	"github.com/zhuxiujia/GoMybatis/example"
 	"fmt"
+	"github.com/agui2200/GoMybatis/engines"
+	"github.com/agui2200/GoMybatis/example"
 	"testing"
 )
 

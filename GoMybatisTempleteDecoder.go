@@ -2,8 +2,8 @@ package GoMybatis
 
 import (
 	"bytes"
-	"github.com/zhuxiujia/GoMybatis/lib/github.com/beevik/etree"
-	"github.com/zhuxiujia/GoMybatis/utils"
+	"github.com/agui2200/GoMybatis/utils"
+	"github.com/beevik/etree"
 	"reflect"
 	"strconv"
 	"strings"
@@ -43,9 +43,7 @@ func (it *GoMybatisTempleteDecoder) DecodeTree(tree map[string]etree.Token, bean
 		}
 	}
 	for _, item := range tree {
-		var typeString = reflect.TypeOf(item).String()
-		if typeString == "*etree.Element" {
-			var v = item.(*etree.Element)
+		if v, o := item.(*etree.Element); o {
 			var method *reflect.StructField
 			if beanType != nil {
 				if isMethodElement(v.Tag) {

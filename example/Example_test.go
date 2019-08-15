@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/agui2200/GoMybatis"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/zhuxiujia/GoMybatis"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -60,7 +60,7 @@ func init() {
 		println("GoMybatisEngine not init! because MysqlUri is * or MysqlUri is ''")
 		return
 	}
-	engine = GoMybatis.GoMybatisEngine{}.New()
+	engine = GoMybatis.New()
 
 	//mysql链接格式为         用户名:密码@(数据库链接地址:端口)/数据库名称   例如root:123456@(***.mysql.rds.aliyuncs.com:3306)/test
 	_, err := engine.Open("mysql", MysqlUri) //此处请按格式填写你的mysql链接，这里用*号代替

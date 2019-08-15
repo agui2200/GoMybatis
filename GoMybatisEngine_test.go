@@ -2,10 +2,11 @@ package GoMybatis
 
 import (
 	"fmt"
+	"github.com/agui2200/GoMybatis/example"
+	"github.com/agui2200/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/utils"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/zhuxiujia/GoMybatis/example"
-	"github.com/zhuxiujia/GoMybatis/tx"
-	"github.com/zhuxiujia/GoMybatis/utils"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -231,4 +232,18 @@ func InitMapperByLocalSession() ExampleActivityMapperImpl {
 	engine.SetLogEnable(false)
 	engine.WriteMapperPtr(&exampleActivityMapperImpl, bytes)
 	return exampleActivityMapperImpl
+}
+
+type TestInvalid struct{ Name string }
+
+func Test_beanCheck(t *testing.T) {
+	testType := struct {
+		SelectAll         func(result *[]int, invalid TestInvalid, invalid2 TestInvalid) error                               `mapperParams:"invalid,invalid2"`
+		SelectByCondition func(name string, startTime time.Time, endTime time.Time, page int, size int, result *[]int) error `mapperParams:"name,startTime,endTime,page,size"`
+		UpdateById        func(session *Session, arg int, result *int64) error                                               //只要参数中包含有*GoMybatis.Session的类型，框架默认使用传入的session对象，用于自定义事务
+		Insert            func(arg int, result *int64) error
+		CountByCondition  func(name string, startTime time.Time, endTime time.Time, result *int) error `mapperParams:"name,startTime,endTime"`
+	}{}
+	v := reflect.ValueOf(&testType)
+	beanCheck(v)
 }

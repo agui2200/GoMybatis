@@ -1,7 +1,7 @@
 package GoMybatis
 
 import (
-	"github.com/zhuxiujia/GoMybatis/utils"
+	"github.com/agui2200/GoMybatis/utils"
 	"reflect"
 	"strconv"
 	"strings"
@@ -134,7 +134,7 @@ func (it GoMybatisSqlResultDecoder) sqlBasicTypeConvert(clomnName string, result
 			el = resultValue.Elem()
 		}
 		resultValue = &el
-		return it.sqlBasicTypeConvert(clomnName,resultMap,tItemTypeFieldType,valueByte,resultValue)
+		return it.sqlBasicTypeConvert(clomnName, resultMap, tItemTypeFieldType, valueByte, resultValue)
 	}
 	if tItemTypeFieldType.Kind() == reflect.String {
 		return it.basicTypeConvert(tItemTypeFieldType, valueByte, resultValue)

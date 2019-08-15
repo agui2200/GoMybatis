@@ -1,8 +1,8 @@
 package GoMybatis
 
 import (
-	"github.com/zhuxiujia/GoMybatis/tx"
-	"github.com/zhuxiujia/GoMybatis/utils"
+	"github.com/agui2200/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/utils"
 )
 
 type SessionFactorySession struct {
@@ -48,7 +48,7 @@ func (it *SessionFactorySession) Begin(p *tx.Propagation) error {
 }
 func (it *SessionFactorySession) Close() {
 	var id = it.Id()
-	var s,_ = it.Factory.SessionMap.Load(id)
+	var s, _ = it.Factory.SessionMap.Load(id)
 	if s != nil {
 		if it.Session != nil {
 			it.Session.Close()
@@ -57,6 +57,6 @@ func (it *SessionFactorySession) Close() {
 	}
 }
 
-func (it *SessionFactorySession) LastPROPAGATION () *tx.Propagation{
+func (it *SessionFactorySession) LastPROPAGATION() *tx.Propagation {
 	return it.Session.LastPROPAGATION()
 }

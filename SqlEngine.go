@@ -2,8 +2,8 @@ package GoMybatis
 
 import (
 	"database/sql"
-	"github.com/zhuxiujia/GoMybatis/ast"
-	"github.com/zhuxiujia/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/ast"
+	"github.com/agui2200/GoMybatis/tx"
 )
 
 type Result struct {
@@ -19,7 +19,7 @@ type Session interface {
 	Commit() error
 	Begin(p *tx.Propagation) error
 	Close()
-	LastPROPAGATION () *tx.Propagation
+	LastPROPAGATION() *tx.Propagation
 }
 
 //产生session的引擎
