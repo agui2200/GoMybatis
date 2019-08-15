@@ -7,25 +7,25 @@ type StructField struct {
 	data []reflect.StructField //方法队列
 }
 
-func (it StructField) New() StructField {
+func (t StructField) New() StructField {
 	return StructField{
 		data: []reflect.StructField{},
 		i:    0,
 	}
 }
 
-func (s *StructField) Push(k reflect.StructField) {
-	s.data = append(s.data, k)
-	s.i++
+func (t *StructField) Push(k reflect.StructField) {
+	t.data = append(t.data, k)
+	t.i++
 }
 
-func (s *StructField) Pop() (ret reflect.StructField) {
-	s.i--
-	ret = s.data[s.i]
-	s.data = s.data[0:s.i]
+func (t *StructField) Pop() (ret reflect.StructField) {
+	t.i--
+	ret = t.data[t.i]
+	t.data = t.data[0:t.i]
 	return
 }
 
-func (s *StructField) Len() int {
-	return s.i
+func (t *StructField) Len() int {
+	return t.i
 }

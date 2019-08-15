@@ -1,31 +1,32 @@
 package tx
+
 type SavePointStack struct {
 	i    int
 	data []string //方法队列
 }
 
-func (it SavePointStack) New() SavePointStack {
+func (t SavePointStack) New() SavePointStack {
 	return SavePointStack{
 		data: []string{},
 		i:    0,
 	}
 }
 
-func (s *SavePointStack) Push(k string) {
-	s.data = append(s.data, k)
-	s.i++
+func (t *SavePointStack) Push(k string) {
+	t.data = append(t.data, k)
+	t.i++
 }
 
-func (s *SavePointStack) Pop() *string {
-	if s.i == 0 {
+func (t *SavePointStack) Pop() *string {
+	if t.i == 0 {
 		return nil
 	}
-	s.i--
-	var ret = s.data[s.i]
-	s.data = s.data[0:s.i]
+	t.i--
+	var ret = t.data[t.i]
+	t.data = t.data[0:t.i]
 	return &ret
 }
 
-func (s *SavePointStack) Len() int {
-	return s.i
+func (t *SavePointStack) Len() int {
+	return t.i
 }

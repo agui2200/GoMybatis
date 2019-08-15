@@ -18,64 +18,46 @@ func ToString(propagation Propagation) string {
 	switch propagation {
 	case PROPAGATION_REQUIRED:
 		return "PROPAGATION_REQUIRED"
-		break
 	case PROPAGATION_SUPPORTS:
 		return "PROPAGATION_SUPPORTS"
-		break
-
 	case PROPAGATION_MANDATORY:
 		return "PROPAGATION_MANDATORY"
-		break
 	case PROPAGATION_REQUIRES_NEW:
 		return "PROPAGATION_REQUIRES_NEW"
-		break
 	case PROPAGATION_NOT_SUPPORTED:
 		return "PROPAGATION_NOT_SUPPORTED"
-		break
 	case PROPAGATION_NEVER:
 		return "PROPAGATION_NEVER"
-		break
 	case PROPAGATION_NESTED:
 		return "PROPAGATION_NESTED"
-		break
 	case PROPAGATION_NOT_REQUIRED:
 		return "PROPAGATION_NOT_REQUIRED"
-		break
+	default:
+		return ""
 	}
-	return ""
 }
 
 func NewPropagation(arg string) Propagation {
 	switch arg {
 	case "":
 		return PROPAGATION_REQUIRED
-		break
 	case "PROPAGATION_REQUIRED":
 		return PROPAGATION_REQUIRED
-		break
 	case "PROPAGATION_SUPPORTS":
 		return PROPAGATION_SUPPORTS
-		break
 	case "PROPAGATION_MANDATORY":
 		return PROPAGATION_MANDATORY
-		break
 	case "PROPAGATION_REQUIRES_NEW":
 		return PROPAGATION_REQUIRES_NEW
-		break
 	case "PROPAGATION_NOT_SUPPORTED":
 		return PROPAGATION_NOT_SUPPORTED
-		break
 	case "PROPAGATION_NEVER":
 		return PROPAGATION_NEVER
-		break
 	case "PROPAGATION_NESTED":
 		return PROPAGATION_NESTED
-		break
 	case "PROPAGATION_NOT_REQUIRED":
 		return PROPAGATION_NOT_REQUIRED
-		break
 	default:
 		return PROPAGATION_REQUIRED
 	}
-	return PROPAGATION_REQUIRED
 }

@@ -9,16 +9,16 @@ type GoroutineMethodStackMap struct {
 	lock sync.RWMutex
 }
 
-func (it GoroutineMethodStackMap) New() GoroutineMethodStackMap {
+func (g GoroutineMethodStackMap) New() GoroutineMethodStackMap {
 	return GoroutineMethodStackMap{
 		m: make(map[int64]*StructField),
 	}
 }
-func (it *GoroutineMethodStackMap) Put(k int64, methodInfo *StructField) {
-	it.lock.Lock()
-	defer it.lock.Unlock()
-	it.m[k] = methodInfo
+func (g *GoroutineMethodStackMap) Put(k int64, methodInfo *StructField) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+	g.m[k] = methodInfo
 }
-func (it *GoroutineMethodStackMap) Get(k int64) *StructField {
-	return it.m[k]
+func (g *GoroutineMethodStackMap) Get(k int64) *StructField {
+	return g.m[k]
 }
