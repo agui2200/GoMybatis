@@ -1,7 +1,7 @@
 package sessions
 
 import (
-	"github.com/agui2200/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/sessions/tx"
 	"github.com/agui2200/GoMybatis/utils"
 )
 

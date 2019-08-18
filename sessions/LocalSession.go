@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/agui2200/GoMybatis/logger"
+	"github.com/agui2200/GoMybatis/sessions/tx"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
-	"github.com/agui2200/GoMybatis/tx"
 	"github.com/agui2200/GoMybatis/utils"
 	"strconv"
 )

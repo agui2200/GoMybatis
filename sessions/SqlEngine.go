@@ -3,8 +3,8 @@ package sessions
 import (
 	"database/sql"
 	"github.com/agui2200/GoMybatis/logger"
+	"github.com/agui2200/GoMybatis/sessions/tx"
 	"github.com/agui2200/GoMybatis/templete/ast"
-	"github.com/agui2200/GoMybatis/tx"
 )
 
 type Result struct {

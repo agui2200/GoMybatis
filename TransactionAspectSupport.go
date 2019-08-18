@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/agui2200/GoMybatis/logger"
 	"github.com/agui2200/GoMybatis/sessions"
-	"github.com/agui2200/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/sessions/tx"
 	"github.com/agui2200/GoMybatis/utils"
 	"reflect"
 	"strings"

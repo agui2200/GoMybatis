@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/agui2200/GoMybatis/example"
 	"github.com/agui2200/GoMybatis/sessions"
-	"github.com/agui2200/GoMybatis/tx"
+	"github.com/agui2200/GoMybatis/sessions/tx"
 	"github.com/agui2200/GoMybatis/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"reflect"
