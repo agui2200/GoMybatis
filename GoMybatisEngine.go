@@ -3,6 +3,7 @@ package GoMybatis
 import (
 	"database/sql"
 	"github.com/agui2200/GoMybatis/logger"
+	"github.com/agui2200/GoMybatis/sessions"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/templete"
 	"github.com/agui2200/GoMybatis/templete/ast"
@@ -18,17 +19,17 @@ type GoMybatisEngine struct {
 
 	objMap map[string]interface{}
 
-	dataSourceRouter    DataSourceRouter     //动态数据源路由器
-	log                 logger.Log           //日志实现类
-	logEnable           bool                 //是否允许日志输出（默认开启）
-	logSystem           *logger.LogSystem    //日志发送系统
-	sessionFactory      *SessionFactory      //session 工厂
-	expressionEngine    ast.ExpressionEngine //表达式解析引擎
-	sqlBuilder          SqlBuilder           //sql 构建
-	sqlResultDecoder    SqlResultDecoder     //sql查询结果解析引擎
-	templeteDecoder     TempleteDecoder      //模板解析引擎
-	goroutineSessionMap *GoroutineSessionMap //map[协程id]Session
-	goroutineIDEnable   bool                 //是否启用goroutineIDEnable（注意（该方法需要在多协程环境下调用）启用会从栈获取协程id，有一定性能消耗，换取最大的事务定义便捷,单线程处理场景可以关闭此配置）
+	dataSourceRouter    sessions.DataSourceRouter     //动态数据源路由器
+	log                 logger.Log                    //日志实现类
+	logEnable           bool                          //是否允许日志输出（默认开启）
+	logSystem           *logger.LogSystem             //日志发送系统
+	sessionFactory      *sessions.SessionFactory      //session 工厂
+	expressionEngine    ast.ExpressionEngine          //表达式解析引擎
+	sqlBuilder          sessions.SqlBuilder           //sql 构建
+	sqlResultDecoder    sessions.SqlResultDecoder     //sql查询结果解析引擎
+	templeteDecoder     sessions.TempleteDecoder      //模板解析引擎
+	goroutineSessionMap *sessions.GoroutineSessionMap //map[协程id]Session
+	goroutineIDEnable   bool                          //是否启用goroutineIDEnable（注意（该方法需要在多协程环境下调用）启用会从栈获取协程id，有一定性能消耗，换取最大的事务定义便捷,单线程处理场景可以关闭此配置）
 }
 
 func (it GoMybatisEngine) New() GoMybatisEngine {
@@ -64,11 +65,11 @@ func (it GoMybatisEngine) New() GoMybatisEngine {
 	}
 
 	if it.sessionFactory == nil {
-		var factory = SessionFactory{}.New(&it)
+		var factory = sessions.SessionFactory{}.New(&it)
 		it.sessionFactory = &factory
 	}
 	if it.goroutineSessionMap == nil {
-		var gr = GoroutineSessionMap{}.New()
+		var gr = sessions.GoroutineSessionMap{}.New()
 		it.goroutineSessionMap = &gr
 	}
 	it.objMap = map[string]interface{}{}
@@ -91,18 +92,18 @@ func (it *GoMybatisEngine) Name() string {
 	return "GoMybatisEngine"
 }
 
-func (it *GoMybatisEngine) DataSourceRouter() DataSourceRouter {
+func (it *GoMybatisEngine) DataSourceRouter() sessions.DataSourceRouter {
 	it.initCheck()
 	return it.dataSourceRouter
 }
-func (it *GoMybatisEngine) SetDataSourceRouter(router DataSourceRouter) {
+func (it *GoMybatisEngine) SetDataSourceRouter(router sessions.DataSourceRouter) {
 	it.initCheck()
 	it.dataSourceRouter = router
 }
 
-func (it *GoMybatisEngine) NewSession(mapperName string) (Session, error) {
+func (it *GoMybatisEngine) NewSession(mapperName string) (sessions.Session, error) {
 	it.initCheck()
-	var session, err = it.DataSourceRouter().Router(mapperName, SessionEngine(it))
+	var session, err = it.DataSourceRouter().Router(mapperName, sessions.SessionEngine(it))
 	return session, err
 }
 
@@ -132,13 +133,13 @@ func (it *GoMybatisEngine) SetLog(log logger.Log) {
 }
 
 //session工厂
-func (it *GoMybatisEngine) SessionFactory() *SessionFactory {
+func (it *GoMybatisEngine) SessionFactory() *sessions.SessionFactory {
 	it.initCheck()
 	return it.sessionFactory
 }
 
 //设置session工厂
-func (it *GoMybatisEngine) SetSessionFactory(factory *SessionFactory) {
+func (it *GoMybatisEngine) SetSessionFactory(factory *sessions.SessionFactory) {
 	it.initCheck()
 	it.sessionFactory = factory
 }
@@ -158,25 +159,25 @@ func (it *GoMybatisEngine) SetExpressionEngine(engine ast.ExpressionEngine) {
 }
 
 //sql构建器
-func (it *GoMybatisEngine) SqlBuilder() SqlBuilder {
+func (it *GoMybatisEngine) SqlBuilder() sessions.SqlBuilder {
 	it.initCheck()
 	return it.sqlBuilder
 }
 
 //设置sql构建器
-func (it *GoMybatisEngine) SetSqlBuilder(builder SqlBuilder) {
+func (it *GoMybatisEngine) SetSqlBuilder(builder sessions.SqlBuilder) {
 	it.initCheck()
 	it.sqlBuilder = builder
 }
 
 //sql查询结果解析器
-func (it *GoMybatisEngine) SqlResultDecoder() SqlResultDecoder {
+func (it *GoMybatisEngine) SqlResultDecoder() sessions.SqlResultDecoder {
 	it.initCheck()
 	return it.sqlResultDecoder
 }
 
 //设置sql查询结果解析器
-func (it *GoMybatisEngine) SetSqlResultDecoder(decoder SqlResultDecoder) {
+func (it *GoMybatisEngine) SetSqlResultDecoder(decoder sessions.SqlResultDecoder) {
 	it.initCheck()
 	it.sqlResultDecoder = decoder
 }
@@ -194,16 +195,16 @@ func (it *GoMybatisEngine) Open(driverName, dataSourceName string) (*sql.DB, err
 }
 
 //模板解析器
-func (it *GoMybatisEngine) TempleteDecoder() TempleteDecoder {
+func (it *GoMybatisEngine) TempleteDecoder() sessions.TempleteDecoder {
 	return it.templeteDecoder
 }
 
 //设置模板解析器
-func (it *GoMybatisEngine) SetTempleteDecoder(decoder TempleteDecoder) {
+func (it *GoMybatisEngine) SetTempleteDecoder(decoder sessions.TempleteDecoder) {
 	it.templeteDecoder = decoder
 }
 
-func (it *GoMybatisEngine) GoroutineSessionMap() *GoroutineSessionMap {
+func (it *GoMybatisEngine) GoroutineSessionMap() *sessions.GoroutineSessionMap {
 	return it.goroutineSessionMap
 }
 

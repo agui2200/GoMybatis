@@ -2,6 +2,7 @@ package GoMybatis
 
 import (
 	"database/sql"
+	"github.com/agui2200/GoMybatis/sessions"
 	"github.com/agui2200/GoMybatis/utils"
 )
 
@@ -30,7 +31,7 @@ func (it *GoMybatisDataSourceRouter) SetDB(driver string, url string, db *sql.DB
 	it.driverMap[url] = driver
 }
 
-func (it *GoMybatisDataSourceRouter) Router(mapperName string, engine SessionEngine) (Session, error) {
+func (it *GoMybatisDataSourceRouter) Router(mapperName string, engine sessions.SessionEngine) (sessions.Session, error) {
 	var key *string
 	var db *sql.DB
 
@@ -56,8 +57,8 @@ func (it *GoMybatisDataSourceRouter) Router(mapperName string, engine SessionEng
 	if key != nil {
 		url = *key
 	}
-	var local = LocalSession{}.New(it.driverMap[url], url, db, engine.Log())
-	var session = Session(&local)
+	var local = sessions.LocalSession{}.New(it.driverMap[url], url, db, engine.Log())
+	var session = sessions.Session(&local)
 	return session, nil
 }
 

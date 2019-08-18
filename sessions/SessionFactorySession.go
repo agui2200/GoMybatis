@@ -1,4 +1,4 @@
-package GoMybatis
+package sessions
 
 import (
 	"github.com/agui2200/GoMybatis/tx"

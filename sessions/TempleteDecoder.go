@@ -1,4 +1,4 @@
-package GoMybatis
+package sessions
 
 import (
 	"github.com/beevik/etree"

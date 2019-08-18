@@ -1,6 +1,5 @@
 package ast
 
-
 type NodeChoose struct {
 	t             NodeType
 	whenNodes     []Node
@@ -26,4 +25,3 @@ func (it *NodeChoose) Eval(env map[string]interface{}) ([]byte, error) {
 	}
 	return it.otherwiseNode.Eval(env)
 }
-

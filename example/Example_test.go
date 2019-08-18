@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/agui2200/GoMybatis"
+	"github.com/agui2200/GoMybatis/sessions"
 	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"testing"
@@ -16,8 +17,8 @@ import (
 //自定义结构体参数（属性必须大写）
 //方法 return 必须包含有error ,为了返回错误信息
 type ExampleActivityMapper struct {
-	GoMybatis.SessionSupport                                   //session事务操作 写法1.  ExampleActivityMapper.SessionSupport.NewSession()
-	NewSession               func() (GoMybatis.Session, error) //session事务操作.写法2   ExampleActivityMapper.NewSession()
+	sessions.SessionSupport                                  //session事务操作 写法1.  ExampleActivityMapper.SessionSupport.NewSession()
+	NewSession              func() (sessions.Session, error) //session事务操作.写法2   ExampleActivityMapper.NewSession()
 	//模板示例
 	SelectTemplete      func(name string) ([]Activity, error) `mapperParams:"name"`
 	SelectCountTemplete func(name string) (int64, error)      `mapperParams:"name"`
@@ -31,7 +32,7 @@ type ExampleActivityMapper struct {
 	SelectByIdMaps    func(ids map[int]string) ([]Activity, error) `mapperParams:"ids"`
 	SelectAll         func() ([]map[string]string, error)
 	SelectByCondition func(name *string, startTime *time.Time, endTime *time.Time, page *int, size *int) ([]Activity, error) `mapperParams:"name,startTime,endTime,page,size"`
-	UpdateById        func(session *GoMybatis.Session, arg Activity) (int64, error)
+	UpdateById        func(session *sessions.Session, arg Activity) (int64, error)
 	Insert            func(arg Activity) (int64, error)
 	CountByCondition  func(name string, startTime time.Time, endTime time.Time) (int, error) `mapperParams:"name,startTime,endTime"`
 	DeleteById        func(id string) (int64, error)                                         `mapperParams:"id"`

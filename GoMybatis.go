@@ -2,6 +2,7 @@ package GoMybatis
 
 import (
 	"bytes"
+	"github.com/agui2200/GoMybatis/sessions"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/templete"
 	"github.com/agui2200/GoMybatis/templete/ast"
@@ -27,7 +28,7 @@ func New() GoMybatisEngine {
 
 //推荐默认使用单例传入
 //根据sessionEngine写入到mapperPtr，value:指向mapper指针反射对象，xml：xml数据，sessionEngine：session引擎，enableLog:是否允许日志输出，log：日志实现
-func WriteMapperByValue(value reflect.Value, xmlBuffer []byte, sessionEngine SessionEngine) {
+func WriteMapperByValue(value reflect.Value, xmlBuffer []byte, sessionEngine sessions.SessionEngine) {
 	if value.Kind() != reflect.Ptr {
 		panic("AopProxy: AopProxy arg must be a pointer")
 	}
@@ -37,7 +38,7 @@ func WriteMapperByValue(value reflect.Value, xmlBuffer []byte, sessionEngine Ses
 
 //推荐默认使用单例传入
 //根据sessionEngine写入到mapperPtr，ptr:指向mapper指针，xml：xml数据，sessionEngine：session引擎，enableLog:是否允许日志输出，log：日志实现
-func WriteMapperPtrByEngine(ptr interface{}, xmlBuffer []byte, sessionEngine SessionEngine) {
+func WriteMapperPtrByEngine(ptr interface{}, xmlBuffer []byte, sessionEngine sessions.SessionEngine) {
 	v := reflect.ValueOf(ptr)
 	if v.Kind() != reflect.Ptr {
 		panic("AopProxy: AopProxy arg must be a pointer")
@@ -56,7 +57,7 @@ func WriteMapperPtrByEngine(ptr interface{}, xmlBuffer []byte, sessionEngine Ses
 //func的基本类型的参数（例如string,int,time.Time,int64,float....）个数无限制(并且需要用Tag指定参数名逗号隔开,例如`mapperParams:"id,phone"`)，返回值必须有error
 //func的结构体参数无需指定mapperParams的tag，框架会自动扫描它的属性，封装为map处理掉
 //使用WriteMapper函数设置代理后即可正常使用。
-func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine SessionEngine) {
+func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.SessionEngine) {
 	beanCheck(bean)
 	var mapperTree = xml.LoadMapperXml(xmlBuffer)
 	sessionEngine.TempleteDecoder().DecodeTree(mapperTree, bean.Type())
@@ -100,7 +101,7 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine SessionEngi
 					}
 					returnValue = &returnV
 				}
-				var session = sessionEngine.SessionFactory().NewSession(beanName, SessionType_Default)
+				var session = sessionEngine.SessionFactory().NewSession(beanName, sessions.SessionType_Default)
 				var err error
 				returnValue.Elem().Set(reflect.ValueOf(session).Elem().Addr().Convert(*returnType.ReturnOutType))
 				return buildReturnValues(returnType, returnValue, err)
@@ -251,7 +252,7 @@ func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*sqlbuild
 }
 
 //return a map map[`method`]*MapperXml
-func makeMethodXmlMap(bean reflect.Value, mapperTree map[string]etree.Token, sqlBuilder SqlBuilder) map[string]*Mapper {
+func makeMethodXmlMap(bean reflect.Value, mapperTree map[string]etree.Token, sqlBuilder sessions.SqlBuilder) map[string]*Mapper {
 	var beanType = bean.Type()
 	if beanType.Kind() == reflect.Ptr {
 		beanType = beanType.Elem()
@@ -330,9 +331,9 @@ func findMapperXml(mapperTree map[string]etree.Token, methodName string) *etree.
 	return nil
 }
 
-func exeMethodByXml(elementType xml.ElementType, beanName string, sessionEngine SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*sqlbuilder.ResultProperty, returnValue *reflect.Value) error {
+func exeMethodByXml(elementType xml.ElementType, beanName string, sessionEngine sessions.SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*sqlbuilder.ResultProperty, returnValue *reflect.Value) error {
 	//TODO　CallBack and Session must Location in build step!
-	var session Session
+	var session sessions.Session
 	var sql string
 	var err error
 	session, sql, err = buildSql(proxyArg, nodes, sessionEngine.SqlBuilder())
@@ -415,7 +416,7 @@ func exeMethodByXml(elementType xml.ElementType, beanName string, sessionEngine 
 	return nil
 }
 
-func closeSession(factory *SessionFactory, session Session) {
+func closeSession(factory *sessions.SessionFactory, session sessions.Session) {
 	if session == nil {
 		return
 	}
@@ -423,8 +424,8 @@ func closeSession(factory *SessionFactory, session Session) {
 	session.Close()
 }
 
-func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder SqlBuilder) (Session, string, error) {
-	var session Session
+func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder sessions.SqlBuilder) (sessions.Session, string, error) {
+	var session sessions.Session
 	var paramMap = make(map[string]interface{})
 	var tagArgsLen = proxyArg.TagArgsLen
 	var argsLen = proxyArg.ArgsLen //参数长度，除session参数外。
@@ -433,10 +434,10 @@ func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder SqlBuilder) (Sessi
 	for argIndex, arg := range proxyArg.Args {
 		var argInterface = arg.Interface()
 		if arg.Kind() == reflect.Ptr && arg.IsNil() == false && argInterface != nil && arg.Type().String() == GoMybatis_Session_Ptr {
-			session = *(argInterface.(*Session))
+			session = *(argInterface.(*sessions.Session))
 			continue
 		} else if argInterface != nil && arg.Kind() == reflect.Interface && arg.Type().String() == GoMybatis_Session {
-			session = argInterface.(Session)
+			session = argInterface.(sessions.Session)
 			continue
 		}
 		if isCustomStruct(arg.Type()) {

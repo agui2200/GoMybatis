@@ -3,6 +3,7 @@ package GoMybatis
 import (
 	"fmt"
 	"github.com/agui2200/GoMybatis/example"
+	"github.com/agui2200/GoMybatis/sessions"
 	"github.com/agui2200/GoMybatis/tx"
 	"github.com/agui2200/GoMybatis/utils"
 	_ "github.com/go-sql-driver/mysql"
@@ -16,7 +17,7 @@ import (
 func Benchmark_One_Transcation(b *testing.B) {
 	b.StopTimer()
 	//使用事务
-	session := Session(&TestSession{})
+	session := sessions.Session(&TestSession{})
 	//初始化mapper文件
 	var exampleActivityMapperImpl = InitMapperByLocalSession()
 	//使用mapper
@@ -38,7 +39,7 @@ func Benchmark_One_Transcation(b *testing.B) {
 func Benchmark_One_Transcation_multiple_coroutine(b *testing.B) {
 	b.StopTimer()
 	//使用事务
-	session := Session(&TestSession{})
+	session := sessions.Session(&TestSession{})
 	//初始化mapper文件
 	var exampleActivityMapperImpl = InitMapperByLocalSession()
 	//使用mapper
@@ -73,7 +74,7 @@ func Benchmark_One_Transcation_multiple_coroutine(b *testing.B) {
 //假设Mysql 数据库查询时间为0，框架单协程的并发数的性能
 func Test_One_Transcation_TPS(t *testing.T) {
 	//使用事务
-	session := Session(&TestSession{})
+	session := sessions.Session(&TestSession{})
 	//初始化mapper文件
 	var exampleActivityMapperImpl = InitMapperByLocalSession()
 	//使用mapper
@@ -94,7 +95,7 @@ func Test_One_Transcation_TPS(t *testing.T) {
 //假设Mysql 数据库查询时间为0，框架多个协程的并发数的性能
 func Test_One_Transcation_multiple_coroutine_TPS(t *testing.T) {
 	//使用事务
-	session := Session(&TestSession{})
+	session := sessions.Session(&TestSession{})
 	//初始化mapper文件
 	var exampleActivityMapperImpl = InitMapperByLocalSession()
 	//使用mapper
@@ -129,7 +130,7 @@ func Test_One_Transcation_multiple_coroutine_TPS(t *testing.T) {
 //验证测试直接返回数据
 func Test_Transcation(t *testing.T) {
 	//使用事务
-	session := Session(&TestSession{})
+	session := sessions.Session(&TestSession{})
 	//初始化mapper文件
 	var exampleActivityMapperImpl = InitMapperByLocalSession()
 
@@ -145,7 +146,7 @@ func Test_Transcation(t *testing.T) {
 }
 
 type TestSession struct {
-	Session
+	sessions.Session
 }
 
 func (it *TestSession) Id() string {
@@ -163,7 +164,7 @@ func (it *TestSession) Query(sqlorArgs string) ([]map[string][]byte, error) {
 	resultsSlice = append(resultsSlice, result)
 	return resultsSlice, nil
 }
-func (it *TestSession) Exec(sqlorArgs string) (*Result, error) {
+func (it *TestSession) Exec(sqlorArgs string) (*sessions.Result, error) {
 	return nil, nil
 }
 func (it *TestSession) Rollback() error {
@@ -185,7 +186,7 @@ func (it *TestSession) Close() {
 //参数中除了session指针外，为指针类型的皆为数据
 // 函数return必须为error 为返回错误信息
 type ExampleActivityMapperImpl struct {
-	SelectByCondition func(session *Session, name *string, startTime *time.Time, endTime *time.Time, page *int, size *int) ([]example.Activity, error) `mapperParams:"session,name,startTime,endTime,page,size"`
+	SelectByCondition func(session *sessions.Session, name *string, startTime *time.Time, endTime *time.Time, page *int, size *int) ([]example.Activity, error) `mapperParams:"session,name,startTime,endTime,page,size"`
 }
 
 //初始化mapper文件和结构体
@@ -240,7 +241,7 @@ func Test_beanCheck(t *testing.T) {
 	testType := struct {
 		SelectAll         func(result *[]int, invalid TestInvalid, invalid2 TestInvalid) error                               `mapperParams:"invalid,invalid2"`
 		SelectByCondition func(name string, startTime time.Time, endTime time.Time, page int, size int, result *[]int) error `mapperParams:"name,startTime,endTime,page,size"`
-		UpdateById        func(session *Session, arg int, result *int64) error                                               //只要参数中包含有*GoMybatis.Session的类型，框架默认使用传入的session对象，用于自定义事务
+		UpdateById        func(session *sessions.Session, arg int, result *int64) error                                      //只要参数中包含有*GoMybatis.Session的类型，框架默认使用传入的session对象，用于自定义事务
 		Insert            func(arg int, result *int64) error
 		CountByCondition  func(name string, startTime time.Time, endTime time.Time, result *int) error `mapperParams:"name,startTime,endTime"`
 	}{}

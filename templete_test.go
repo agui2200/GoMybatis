@@ -3,6 +3,7 @@ package GoMybatis
 import (
 	"fmt"
 	"github.com/agui2200/GoMybatis/example"
+	"github.com/agui2200/GoMybatis/sessions"
 	"github.com/agui2200/GoMybatis/templete"
 	"github.com/agui2200/GoMybatis/tx"
 	"github.com/agui2200/GoMybatis/xml"
@@ -11,10 +12,10 @@ import (
 )
 
 type ExampleActivityMapper struct {
-	SelectTemplete func(name string, session Session) ([]example.Activity, error) `mapperParams:"name,session"`
-	InsertTemplete func(args []example.Activity, session Session) (int64, error)  `mapperParams:"args,session"`
-	UpdateTemplete func(arg example.Activity, session Session) (int64, error)     `mapperParams:"name,session"`
-	DeleteTemplete func(name string, session Session) (int64, error)              `mapperParams:"name,session"`
+	SelectTemplete func(name string, session sessions.Session) ([]example.Activity, error) `mapperParams:"name,session"`
+	InsertTemplete func(args []example.Activity, session sessions.Session) (int64, error)  `mapperParams:"args,session"`
+	UpdateTemplete func(arg example.Activity, session sessions.Session) (int64, error)     `mapperParams:"name,session"`
+	DeleteTemplete func(name string, session sessions.Session) (int64, error)              `mapperParams:"name,session"`
 }
 
 //初始化mapper文件和结构体
@@ -80,7 +81,7 @@ func initMapper() {
 }
 
 type TempleteSession struct {
-	Session
+	sessions.Session
 }
 
 func (it *TempleteSession) Id() string {
@@ -98,8 +99,8 @@ func (it *TempleteSession) Query(sqlorArgs string) ([]map[string][]byte, error) 
 	resultsSlice = append(resultsSlice, result)
 	return resultsSlice, nil
 }
-func (it *TempleteSession) Exec(sqlorArgs string) (*Result, error) {
-	var result = Result{
+func (it *TempleteSession) Exec(sqlorArgs string) (*sessions.Result, error) {
+	var result = sessions.Result{
 		LastInsertId: 1,
 		RowsAffected: 1,
 	}

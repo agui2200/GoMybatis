@@ -3,6 +3,7 @@ package GoMybatis
 import (
 	"fmt"
 	"github.com/agui2200/GoMybatis/logger"
+	"github.com/agui2200/GoMybatis/sessions"
 	"github.com/agui2200/GoMybatis/tx"
 	"github.com/agui2200/GoMybatis/utils"
 	"reflect"
@@ -11,7 +12,7 @@ import (
 
 //使用AOP切面 代理目标服务，如果服务painc()它的事务会回滚
 //默认为单协程模型，如果是多协程调用的情况请开启engine.SetGoroutineIDEnable(true)
-func AopProxyService(service interface{}, engine SessionEngine) {
+func AopProxyService(service interface{}, engine sessions.SessionEngine) {
 	var v = reflect.ValueOf(service)
 	if v.Kind() != reflect.Ptr {
 		panic("[GoMybatis] AopProxy service  must use ptr arg!")
@@ -20,7 +21,7 @@ func AopProxyService(service interface{}, engine SessionEngine) {
 }
 
 //使用AOP切面 代理目标服务，如果服务painc()它的事务会回滚
-func AopProxyServiceValue(service reflect.Value, engine SessionEngine) {
+func AopProxyServiceValue(service reflect.Value, engine sessions.SessionEngine) {
 	var beanType = service.Type().Elem()
 	var beanName = beanType.PkgPath() + beanType.Name()
 	ProxyValue(service, func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value {
@@ -86,7 +87,7 @@ func AopProxyServiceValue(service reflect.Value, engine SessionEngine) {
 	})
 }
 
-func doNativeMethod(funcField reflect.StructField, arg ProxyArg, nativeImplFunc reflect.Value, session Session, log logger.Log) []reflect.Value {
+func doNativeMethod(funcField reflect.StructField, arg ProxyArg, nativeImplFunc reflect.Value, session sessions.Session, log logger.Log) []reflect.Value {
 	defer func() {
 		err := recover()
 		if err != nil {
