@@ -2,10 +2,11 @@ package GoMybatis
 
 import (
 	"database/sql"
-	"github.com/agui2200/GoMybatis/ast"
-	"github.com/agui2200/GoMybatis/engines"
 	"github.com/agui2200/GoMybatis/logger"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
+	"github.com/agui2200/GoMybatis/templete"
+	"github.com/agui2200/GoMybatis/templete/ast"
+	"github.com/agui2200/GoMybatis/templete/engines"
 	"github.com/agui2200/GoMybatis/utils"
 	"reflect"
 	"sync"
@@ -54,7 +55,7 @@ func (it GoMybatisEngine) New() GoMybatisEngine {
 		it.sqlResultDecoder = sqlbuilder.GoMybatisSqlResultDecoder{}
 	}
 	if it.templeteDecoder == nil {
-		it.SetTempleteDecoder(&GoMybatisTempleteDecoder{})
+		it.SetTempleteDecoder(&templete.GoMybatisTempleteDecoder{})
 	}
 
 	if it.sqlBuilder == nil {

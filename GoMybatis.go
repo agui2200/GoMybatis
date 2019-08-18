@@ -2,8 +2,9 @@ package GoMybatis
 
 import (
 	"bytes"
-	"github.com/agui2200/GoMybatis/ast"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
+	"github.com/agui2200/GoMybatis/templete"
+	"github.com/agui2200/GoMybatis/templete/ast"
 	"github.com/agui2200/GoMybatis/utils"
 	"github.com/agui2200/GoMybatis/xml"
 	"github.com/beevik/etree"
@@ -458,7 +459,7 @@ func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder SqlBuilder) (Sessi
 			paramMap[upperKey] = argInterface
 		} else {
 			//未命名参数，为arg加参数位置，例如 arg0,arg1,arg2....
-			paramMap[DefaultOneArg+strconv.Itoa(argIndex)] = argInterface
+			paramMap[templete.DefaultOneArg+strconv.Itoa(argIndex)] = argInterface
 		}
 	}
 	if customLen == 1 && customIndex != -1 {

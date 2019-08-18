@@ -2,8 +2,8 @@ package GoMybatis
 
 import (
 	"database/sql"
-	"github.com/agui2200/GoMybatis/ast"
 	"github.com/agui2200/GoMybatis/logger"
+	"github.com/agui2200/GoMybatis/templete/ast"
 	"github.com/agui2200/GoMybatis/tx"
 )
 

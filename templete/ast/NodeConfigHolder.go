@@ -1,6 +1,5 @@
 package ast
 
-
 type NodeConfigHolder struct {
 	Convert SqlArgTypeConvert
 	Proxy   ExpressionEngine

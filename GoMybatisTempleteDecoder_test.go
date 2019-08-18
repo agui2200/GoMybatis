@@ -3,6 +3,7 @@ package GoMybatis
 import (
 	"fmt"
 	"github.com/agui2200/GoMybatis/example"
+	"github.com/agui2200/GoMybatis/templete"
 	"github.com/agui2200/GoMybatis/tx"
 	"github.com/agui2200/GoMybatis/xml"
 	"testing"
@@ -62,7 +63,7 @@ func initMapper() {
 		panic(`Test_Load_Xml fail,LoadMapperXml "example/Example_ActivityMapper.xml"`)
 	}
 
-	var decoder = GoMybatisTempleteDecoder{}
+	var decoder = templete.GoMybatisTempleteDecoder{}
 	err = decoder.DecodeTree(xmlItems, nil)
 	if err != nil {
 		panic(err)
@@ -275,7 +276,7 @@ func initMapperTest() {
 		panic(`Test_Load_Xml fail,LoadMapperXml "example/Example_ActivityMapper.xml"`)
 	}
 
-	var decoder = GoMybatisTempleteDecoder{}
+	var decoder = templete.GoMybatisTempleteDecoder{}
 	err = decoder.DecodeTree(xmlItems, nil)
 	if err != nil {
 		panic(err)

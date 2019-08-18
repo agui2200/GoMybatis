@@ -14,8 +14,6 @@ type TestBeanChild struct {
 	Age  *int
 }
 
-
-
 func BenchmarkSplite(b *testing.B) {
 	b.StopTimer()
 	var str = "#{name}#{name}#{name}#{name}#{name}#{name}#{name}#{name}#{name}#{name}#{name}#{name}"

@@ -1,8 +1,8 @@
 package GoMybatis
 
 import (
-	"github.com/agui2200/GoMybatis/ast"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
+	"github.com/agui2200/GoMybatis/templete/ast"
 )
 
 //sql文本构建

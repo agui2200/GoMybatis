@@ -96,8 +96,7 @@ func (it *NodeForEach) Eval(env map[string]interface{}) ([]byte, error) {
 	newTempSql.WriteString(it.open)
 	newTempSql.Write(tempSqlString)
 	newTempSql.WriteString(it.close)
-	var newTempSqlBytes=newTempSql.Bytes()
+	var newTempSqlBytes = newTempSql.Bytes()
 	newTempSql.Reset()
 	return newTempSqlBytes, nil
 }
-

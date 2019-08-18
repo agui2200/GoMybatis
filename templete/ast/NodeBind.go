@@ -1,7 +1,5 @@
 package ast
 
-
-
 type NodeBind struct {
 	t NodeType
 

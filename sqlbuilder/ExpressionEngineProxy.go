@@ -1,8 +1,8 @@
 package sqlbuilder
 
 import (
-	"github.com/agui2200/GoMybatis/ast"
 	"github.com/agui2200/GoMybatis/sqlbuilder/cache"
+	"github.com/agui2200/GoMybatis/templete/ast"
 	"github.com/agui2200/GoMybatis/utils"
 )
 

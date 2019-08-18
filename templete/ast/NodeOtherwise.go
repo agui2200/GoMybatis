@@ -1,6 +1,5 @@
 package ast
 
-
 type NodeOtherwise struct {
 	childs []Node
 	t      NodeType
@@ -17,4 +16,3 @@ func (it *NodeOtherwise) Eval(env map[string]interface{}) ([]byte, error) {
 	}
 	return r, nil
 }
-

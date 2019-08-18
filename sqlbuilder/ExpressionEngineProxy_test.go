@@ -2,8 +2,8 @@ package sqlbuilder
 
 import (
 	"fmt"
-	"github.com/agui2200/GoMybatis/engines"
 	"github.com/agui2200/GoMybatis/example"
+	"github.com/agui2200/GoMybatis/templete/engines"
 	"testing"
 )
 
