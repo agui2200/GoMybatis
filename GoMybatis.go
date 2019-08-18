@@ -22,6 +22,10 @@ type Mapper struct {
 	nodes []ast.Node
 }
 
+type Session interface {
+	sessions.Session
+}
+
 func New() GoMybatisEngine {
 	return GoMybatisEngine{}.New()
 }
@@ -101,7 +105,7 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 					}
 					returnValue = &returnV
 				}
-				var session = sessionEngine.SessionFactory().NewSession(beanName, sessions.SessionType_Default)
+				session := Session(sessionEngine.SessionFactory().NewSession(beanName, sessions.SessionType_Default))
 				var err error
 				returnValue.Elem().Set(reflect.ValueOf(session).Elem().Addr().Convert(*returnType.ReturnOutType))
 				return buildReturnValues(returnType, returnValue, err)
