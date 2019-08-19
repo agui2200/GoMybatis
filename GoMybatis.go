@@ -15,7 +15,9 @@ import (
 	"strings"
 )
 
-const NewSessionFunc = "NewSession" //NewSession method,auto write implement body code
+const (
+	NewSessionFunc = "NewSession" // NewSession method,auto write implement body code
+)
 
 type Mapper struct {
 	xml   *etree.Element
@@ -89,9 +91,8 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 				resultMap = resultMaps[resultMapId]
 			}
 		}
-
-		//执行期
-		if funcName == NewSessionFunc {
+		switch funcName {
+		case NewSessionFunc:
 			var proxyFunc = func(arg ProxyArg) []reflect.Value {
 				var returnValue *reflect.Value = nil
 				//build return Type
@@ -105,13 +106,17 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 					}
 					returnValue = &returnV
 				}
-				session := Session(sessionEngine.SessionFactory().NewSession(beanName, sessions.SessionType_Default))
-				var err error
-				returnValue.Elem().Set(reflect.ValueOf(session).Elem().Addr().Convert(*returnType.ReturnOutType))
-				return buildReturnValues(returnType, returnValue, err)
+				if returnValue != nil {
+					// 创建一个 实际的 session 进行注入
+					session := Session(sessionEngine.SessionFactory().NewSession(beanName, sessions.SessionType_Default))
+					var err error
+					returnValue.Elem().Set(reflect.ValueOf(session).Elem().Addr().Convert(*returnType.ReturnOutType))
+					return buildReturnValues(returnType, returnValue, err)
+				}
+				panic("[GoMybatis] inject NewSessionFunc error : not support return value!")
 			}
 			return proxyFunc
-		} else {
+		default:
 			var proxyFunc = func(arg ProxyArg) []reflect.Value {
 				var returnValue *reflect.Value = nil
 				//build return Type

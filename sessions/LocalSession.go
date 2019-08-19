@@ -159,7 +159,6 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				}
 				return err
 			}
-			break
 		case tx.PROPAGATION_SUPPORTS: //end
 			if it.txStack.Len() > 0 {
 				return nil
@@ -167,14 +166,12 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				//非事务
 				return nil
 			}
-			break
 		case tx.PROPAGATION_MANDATORY: //end
 			if it.txStack.Len() > 0 {
 				return nil
 			} else {
 				return errors.New("[GoMybatis] PROPAGATION_MANDATORY Nested transaction exception! current not have a transaction!")
 			}
-			break
 		case tx.PROPAGATION_REQUIRES_NEW:
 			if it.txStack.Len() > 0 {
 				//TODO stop old tx
@@ -220,7 +217,6 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				}
 				return err
 			}
-			break
 		case tx.PROPAGATION_NOT_REQUIRED: //end
 			if it.txStack.Len() > 0 {
 				return errors.New("[GoMybatis] PROPAGATION_NOT_REQUIRED Nested transaction exception! current Already have a transaction!")
@@ -232,10 +228,8 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				}
 				return err
 			}
-			break
 		default:
 			panic("[GoMybatis] Nested transaction exception! not support PROPAGATION in begin!")
-			break
 		}
 
 	}
@@ -301,7 +295,6 @@ func (it *LocalSession) Query(sqlorArgs string) ([]map[string][]byte, error) {
 	} else {
 		return sqlbuilder.Rows2maps(rows)
 	}
-	return nil, nil
 }
 
 func (it *LocalSession) Exec(sqlorArgs string) (*Result, error) {

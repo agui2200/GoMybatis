@@ -30,7 +30,7 @@ func (it *SessionFactory) NewSession(mapperName string, sessionType SessionType)
 			Session: session,
 			Factory: it,
 		}
-		newSession = Session(&factorySession)
+		newSession = &factorySession
 		break
 	case SessionType_Local:
 		newSession, err = it.Engine.NewSession(mapperName)

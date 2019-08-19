@@ -229,12 +229,14 @@ func Test_local_Transation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	session.Begin(nil) //开启事务
+	err = session.Begin(nil) //开启事务
+	if err != nil {
+		t.Fatal(err)
+	}
 	var activityBean = Activity{
 		Id:   "170",
 		Name: "rs168-8",
 	}
-	//GoMybatisSession := GoMybatis.Session(session)
 	var updateNum, e = exampleActivityMapper.UpdateById(&session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
 	fmt.Println("updateNum=", updateNum)
 	if e != nil {
