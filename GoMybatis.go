@@ -443,10 +443,10 @@ func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder sessions.SqlBuilde
 	for argIndex, arg := range proxyArg.Args {
 		var argInterface = arg.Interface()
 		if arg.Kind() == reflect.Ptr && arg.IsNil() == false && argInterface != nil && arg.Type().String() == GoMybatis_Session_Ptr {
-			session = *(argInterface.(*sessions.Session))
+			session = *(argInterface.(*Session))
 			continue
 		} else if argInterface != nil && arg.Kind() == reflect.Interface && arg.Type().String() == GoMybatis_Session {
-			session = argInterface.(sessions.Session)
+			session = argInterface.(Session)
 			continue
 		}
 		if isCustomStruct(arg.Type()) {
