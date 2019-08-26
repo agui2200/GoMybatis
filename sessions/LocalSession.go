@@ -283,10 +283,10 @@ func (it *LocalSession) Query(sqlorArgs string) ([]map[string][]byte, error) {
 	var err error
 	var t, _ = it.txStack.Last()
 	if t != nil {
-		rows, err = t.Query(sqlorArgs)
+		rows, err = t.QueryContext(it.ctx, sqlorArgs)
 		err = it.dbErrorPack(err)
 	} else {
-		rows, err = it.db.Query(sqlorArgs)
+		rows, err = it.db.QueryContext(it.ctx, sqlorArgs)
 		err = it.dbErrorPack(err)
 	}
 	if rows != nil {
@@ -311,10 +311,10 @@ func (it *LocalSession) Exec(sqlorArgs string) (*Result, error) {
 	var err error
 	var t, _ = it.txStack.Last()
 	if t != nil {
-		result, err = t.Exec(sqlorArgs)
+		result, err = t.ExecContext(it.ctx, sqlorArgs)
 		err = it.dbErrorPack(err)
 	} else {
-		result, err = it.db.Exec(sqlorArgs)
+		result, err = it.db.ExecContext(it.ctx, sqlorArgs)
 		err = it.dbErrorPack(err)
 	}
 	if err != nil {
