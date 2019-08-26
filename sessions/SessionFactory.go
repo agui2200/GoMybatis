@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"sync"
 )
 
@@ -14,7 +15,16 @@ func (it SessionFactory) New(Engine SessionEngine) SessionFactory {
 	return it
 }
 
+// 加上上下文版
+func (it *SessionFactory) NewSessionContext(ctx context.Context, mapperName string, sessionType SessionType) Session {
+	return it.newSession(ctx, mapperName, sessionType)
+}
+
 func (it *SessionFactory) NewSession(mapperName string, sessionType SessionType) Session {
+	return it.newSession(nil, mapperName, sessionType)
+}
+
+func (it *SessionFactory) newSession(ctx context.Context, mapperName string, sessionType SessionType) Session {
 	if it.Engine == nil {
 		panic("[GoMybatis] SessionFactory not init! you must call method SessionFactory.New(*)")
 	}
@@ -40,6 +50,11 @@ func (it *SessionFactory) NewSession(mapperName string, sessionType SessionType)
 		break
 	default:
 		panic("[GoMybatis] newSession() must have a SessionType!")
+	}
+	if ctx == nil {
+		newSession.WithContext(context.TODO())
+	} else {
+		newSession.WithContext(ctx)
 	}
 	it.SessionMap.Store(newSession.Id(), newSession)
 	return newSession

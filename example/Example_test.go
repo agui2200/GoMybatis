@@ -1,6 +1,7 @@
 package example
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,8 +17,8 @@ import (
 //自定义结构体参数（属性必须大写）
 //方法 return 必须包含有error ,为了返回错误信息
 type ExampleActivityMapper struct {
-	GoMybatis.SessionSupport                                   //session事务操作 写法1.  ExampleActivityMapper.SessionSupport.NewSession()
-	NewSession               func() (GoMybatis.Session, error) //session事务操作.写法2   ExampleActivityMapper.NewSession()
+	GoMybatis.SessionSupport                                                      //session事务操作 写法1.  ExampleActivityMapper.SessionSupport.NewSession()
+	NewSession               func(ctx context.Context) (GoMybatis.Session, error) //session事务操作.写法2   ExampleActivityMapper.NewSession()
 	//模板示例
 	SelectTemplete      func(name string) ([]Activity, error) `mapperParams:"name"`
 	SelectCountTemplete func(name string) (int64, error)      `mapperParams:"name"`
@@ -225,7 +226,7 @@ func Test_local_Transation(t *testing.T) {
 		return
 	}
 	//使用事务
-	var session, err = exampleActivityMapper.SessionSupport.NewSession()
+	var session, err = exampleActivityMapper.SessionSupport.NewSession(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}

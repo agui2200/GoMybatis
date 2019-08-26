@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/agui2200/GoMybatis/logger"
@@ -12,17 +13,18 @@ import (
 
 //本地直连session
 type LocalSession struct {
-	SessionId       string
-	driver          string
-	url             string
-	db              *sql.DB
-	stmt            *sql.Stmt
-	txStack         tx.TxStack
-	savePointStack  *tx.SavePointStack
-	isClosed        bool
-	newLocalSession *LocalSession
+	SessionId      string
+	driver         string
+	url            string
+	db             *sql.DB
+	stmt           *sql.Stmt
+	txStack        tx.TxStack
+	savePointStack *tx.SavePointStack
+	isClosed       bool
+	session        *LocalSession
 
 	logSystem logger.Log
+	ctx       context.Context
 }
 
 func (it LocalSession) New(driver string, url string, db *sql.DB, logSystem logger.Log) LocalSession {
@@ -45,10 +47,10 @@ func (it *LocalSession) Rollback() error {
 		return utils.NewError("LocalSession", " can not Rollback() a Closed Session!")
 	}
 
-	if it.newLocalSession != nil {
-		var e = it.newLocalSession.Rollback()
-		it.newLocalSession.Close()
-		it.newLocalSession = nil
+	if it.session != nil {
+		var e = it.session.Rollback()
+		it.session.Close()
+		it.session = nil
 		if e != nil {
 			return e
 		}
@@ -92,10 +94,10 @@ func (it *LocalSession) Commit() error {
 		return utils.NewError("LocalSession", " can not Commit() a Closed Session!")
 	}
 
-	if it.newLocalSession != nil {
-		var e = it.newLocalSession.Commit()
-		it.newLocalSession.Close()
-		it.newLocalSession = nil
+	if it.session != nil {
+		var e = it.session.Commit()
+		it.session.Close()
+		it.session = nil
 		if e != nil {
 			return e
 		}
@@ -182,7 +184,7 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				return e
 			}
 			var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem) //same PROPAGATION_REQUIRES_NEW
-			it.newLocalSession = &sess
+			it.session = &sess
 			break
 		case tx.PROPAGATION_NOT_SUPPORTED:
 			if it.txStack.Len() > 0 {
@@ -194,7 +196,7 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				return e
 			}
 			var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem)
-			it.newLocalSession = &sess
+			it.session = &sess
 			break
 		case tx.PROPAGATION_NEVER: //END
 			if it.txStack.Len() > 0 {
@@ -248,9 +250,9 @@ func (it *LocalSession) Close() {
 	if it.logSystem != nil {
 		it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Close session"))
 	}
-	if it.newLocalSession != nil {
-		it.newLocalSession.Close()
-		it.newLocalSession = nil
+	if it.session != nil {
+		it.session.Close()
+		it.session = nil
 	}
 	if it.db != nil {
 		if it.stmt != nil {
@@ -273,8 +275,8 @@ func (it *LocalSession) Query(sqlorArgs string) ([]map[string][]byte, error) {
 	if it.isClosed == true {
 		return nil, utils.NewError("LocalSession", " can not Query() a Closed Session!")
 	}
-	if it.newLocalSession != nil {
-		return it.newLocalSession.Query(sqlorArgs)
+	if it.session != nil {
+		return it.session.Query(sqlorArgs)
 	}
 
 	var rows *sql.Rows
@@ -301,8 +303,8 @@ func (it *LocalSession) Exec(sqlorArgs string) (*Result, error) {
 	if it.isClosed == true {
 		return nil, utils.NewError("LocalSession", " can not Exec() a Closed Session!")
 	}
-	if it.newLocalSession != nil {
-		return it.newLocalSession.Exec(sqlorArgs)
+	if it.session != nil {
+		return it.session.Exec(sqlorArgs)
 	}
 
 	var result sql.Result
@@ -333,4 +335,8 @@ func (it *LocalSession) dbErrorPack(e error) error {
 		return sqlError
 	}
 	return nil
+}
+
+func (it *LocalSession) WithContext(ctx context.Context) {
+	it.ctx = ctx
 }

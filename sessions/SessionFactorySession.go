@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"github.com/agui2200/GoMybatis/sessions/tx"
 	"github.com/agui2200/GoMybatis/utils"
 )
@@ -59,4 +60,8 @@ func (it *SessionFactorySession) Close() {
 
 func (it *SessionFactorySession) LastPROPAGATION() *tx.Propagation {
 	return it.Session.LastPROPAGATION()
+}
+
+func (it *SessionFactorySession) WithContext(ctx context.Context) {
+	it.Session.WithContext(ctx)
 }

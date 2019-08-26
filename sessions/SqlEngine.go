@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"database/sql"
 	"github.com/agui2200/GoMybatis/logger"
 	"github.com/agui2200/GoMybatis/sessions/tx"
@@ -21,6 +22,7 @@ type Session interface {
 	Begin(p *tx.Propagation) error
 	Close()
 	LastPROPAGATION() *tx.Propagation
+	WithContext(ctx context.Context)
 }
 
 //产生session的引擎
