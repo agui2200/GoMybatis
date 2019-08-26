@@ -226,7 +226,8 @@ func Test_local_Transation(t *testing.T) {
 		return
 	}
 	//使用事务
-	var session, err = exampleActivityMapper.SessionSupport.NewSession(context.TODO())
+	ctx := context.WithValue(context.TODO(), "test_id", "1")
+	var session, err = exampleActivityMapper.SessionSupport.NewSession(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

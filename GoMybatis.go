@@ -2,6 +2,7 @@ package GoMybatis
 
 import (
 	"bytes"
+	"context"
 	"github.com/agui2200/GoMybatis/sessions"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/templete"
@@ -94,6 +95,16 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 		switch funcName {
 		case NewSessionFunc:
 			var proxyFunc = func(arg ProxyArg) []reflect.Value {
+				ctx := context.TODO()
+				if arg.ArgsLen > 0 {
+					for _, a := range arg.Args {
+						if a.Kind() == reflect.Interface {
+							if v, o := a.Interface().(context.Context); o {
+								ctx = v
+							}
+						}
+					}
+				}
 				var returnValue *reflect.Value = nil
 				//build return Type
 				if returnType.ReturnOutType != nil {
@@ -108,7 +119,7 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 				}
 				if returnValue != nil {
 					// 创建一个 实际的 session 进行注入
-					session := Session(sessionEngine.SessionFactory().NewSession(beanName, sessions.SessionType_Default))
+					session := Session(sessionEngine.SessionFactory().NewSessionContext(ctx, beanName, sessions.SessionType_Default))
 					var err error
 					returnValue.Elem().Set(reflect.ValueOf(session).Elem().Addr().Convert(*returnType.ReturnOutType))
 					return buildReturnValues(returnType, returnValue, err)
