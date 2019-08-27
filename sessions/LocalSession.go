@@ -11,6 +11,7 @@ import (
 	"github.com/agui2200/GoMybatis/utils"
 	"github.com/go-sql-driver/mysql"
 	"github.com/opentracing/opentracing-go"
+	"runtime"
 	"strconv"
 )
 
@@ -377,7 +378,7 @@ func (it *LocalSession) Exec(sqlorArgs string) (res *Result, err error) {
 		return it.session.Exec(sqlorArgs)
 	}
 	// 开启 span
-	span, _ := it.startSpanFromContext("query")
+	span, _ := it.startSpanFromContext("exec")
 	if span != nil {
 		span.SetTag("db.statement", sqlorArgs)
 		defer func() {
@@ -434,5 +435,23 @@ func (it *LocalSession) startSpanFromContext(opName string) (s opentracing.Span,
 
 func (it *LocalSession) errorToSpan(s opentracing.Span, err error) {
 	s.SetTag("event", "error")
-	s.SetTag("error.object", err)
+	// 加入一些runtime的内容，方便调试
+	pc := make([]uintptr, 10) // at least 1 entry needed
+	n := runtime.Callers(-2, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	s.SetTag("message", err)
+	var stack []map[string]interface{}
+	for {
+		frame, more := frames.Next()
+		//fmt.Printf("%s:%d %s\n", frame.File, frame.Line, frame.Function)
+		stack = append(stack, map[string]interface{}{
+			"file":     frame.File,
+			"line":     frame.Line,
+			"function": frame.Function,
+		})
+		if !more {
+			break
+		}
+	}
+	s.SetTag("error.object", stack)
 }

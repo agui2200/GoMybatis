@@ -20,7 +20,7 @@ type ExampleActivityMapper struct {
 	GoMybatis.SessionSupport                                                      //session事务操作 写法1.  ExampleActivityMapper.SessionSupport.NewSession()
 	NewSession               func(ctx context.Context) (GoMybatis.Session, error) //session事务操作.写法2   ExampleActivityMapper.NewSession()
 	//模板示例
-	SelectTemplete      func(ctx context.Context, name string) ([]Activity, error) `mapperParams:"name"`
+	SelectTemplete      func(ctx context.Context, name string) ([]Activity, error) `mapperParams:"name"` // 参数中加入context以后，如果context里面有span ，则自动开启tracing
 	SelectCountTemplete func(name string) (int64, error)                           `mapperParams:"name"`
 	InsertTemplete      func(arg Activity) (int64, error)
 	InsertTempleteBatch func(args []Activity) (int64, error) `mapperParams:"args"`
