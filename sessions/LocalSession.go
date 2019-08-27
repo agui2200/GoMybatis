@@ -67,7 +67,17 @@ func (it *LocalSession) Id() string {
 	return it.SessionId
 }
 
-func (it *LocalSession) Rollback() error {
+func (it *LocalSession) Rollback() (err error) {
+	defer func() {
+		span, ctx := it.startSpanFromContext("begin")
+		if span != nil {
+			it.ctx = ctx
+			if err != nil {
+				it.errorToSpan(span, err)
+				span.Finish()
+			}
+		}
+	}()
 	if it.isClosed == true {
 		return utils.NewError("LocalSession", " can not Rollback() a Closed Session!")
 	}
@@ -114,7 +124,17 @@ func (it *LocalSession) Rollback() error {
 	return nil
 }
 
-func (it *LocalSession) Commit() error {
+func (it *LocalSession) Commit() (err error) {
+	defer func() {
+		span, ctx := it.startSpanFromContext("commit")
+		if span != nil {
+			it.ctx = ctx
+			if err != nil {
+				it.errorToSpan(span, err)
+				span.Finish()
+			}
+		}
+	}()
 	if it.isClosed == true {
 		return utils.NewError("LocalSession", " can not Commit() a Closed Session!")
 	}
@@ -160,7 +180,17 @@ func (it *LocalSession) Commit() error {
 	return nil
 }
 
-func (it *LocalSession) Begin(p *tx.Propagation) error {
+func (it *LocalSession) Begin(p *tx.Propagation) (err error) {
+	defer func() {
+		span, ctx := it.startSpanFromContext("begin")
+		if span != nil {
+			it.ctx = ctx
+			if err != nil {
+				it.errorToSpan(span, err)
+				span.Finish()
+			}
+		}
+	}()
 	var propagation = ""
 	if p != nil {
 		propagation = tx.ToString(*p)
@@ -209,6 +239,7 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				return e
 			}
 			var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem) //same PROPAGATION_REQUIRES_NEW
+			sess.WithContext(it.ctx)
 			it.session = &sess
 			break
 		case tx.PROPAGATION_NOT_SUPPORTED:
@@ -221,6 +252,7 @@ func (it *LocalSession) Begin(p *tx.Propagation) error {
 				return e
 			}
 			var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem)
+			sess.WithContext(it.ctx)
 			it.session = &sess
 			break
 		case tx.PROPAGATION_NEVER: //END
@@ -272,6 +304,9 @@ func (it *LocalSession) LastPROPAGATION() *tx.Propagation {
 }
 
 func (it *LocalSession) Close() {
+	if span := opentracing.SpanFromContext(it.ctx); span != nil {
+		span.Finish()
+	}
 	if it.logSystem != nil {
 		it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Close session"))
 	}
@@ -334,16 +369,26 @@ func (it *LocalSession) Query(sqlorArgs string) (res []map[string][]byte, err er
 	}
 }
 
-func (it *LocalSession) Exec(sqlorArgs string) (*Result, error) {
+func (it *LocalSession) Exec(sqlorArgs string) (res *Result, err error) {
 	if it.isClosed == true {
 		return nil, utils.NewError("LocalSession", " can not Exec() a Closed Session!")
 	}
 	if it.session != nil {
 		return it.session.Exec(sqlorArgs)
 	}
+	// 开启 span
+	span, _ := it.startSpanFromContext("query")
+	if span != nil {
+		span.SetTag("db.statement", sqlorArgs)
+		defer func() {
+			if err != nil {
+				it.errorToSpan(span, err)
+			}
+			span.Finish()
+		}()
+	}
 
 	var result sql.Result
-	var err error
 	var t, _ = it.txStack.Last()
 	if t != nil {
 		result, err = t.ExecContext(it.ctx, sqlorArgs)
