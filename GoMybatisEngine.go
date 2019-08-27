@@ -17,7 +17,7 @@ type GoMybatisEngine struct {
 	mutex  sync.RWMutex //读写锁
 	isInit bool         //是否初始化
 
-	objMap map[string]interface{}
+	objMap sync.Map
 
 	dataSourceRouter    sessions.DataSourceRouter     //动态数据源路由器
 	log                 logger.Log                    //日志实现类
@@ -72,7 +72,6 @@ func (it GoMybatisEngine) New() GoMybatisEngine {
 		var gr = sessions.GoroutineSessionMap{}.New()
 		it.goroutineSessionMap = &gr
 	}
-	it.objMap = map[string]interface{}{}
 	it.goroutineIDEnable = true
 	return it
 }
@@ -213,11 +212,12 @@ func (it *GoMybatisEngine) RegisterObj(ptr interface{}, name string) {
 	if v.Kind() != reflect.Ptr {
 		panic("GoMybatis Engine Register obj not a ptr value!")
 	}
-	it.objMap[name] = ptr
+	it.objMap.Store(name, ptr)
 }
 
 func (it *GoMybatisEngine) GetObj(name string) interface{} {
-	return it.objMap[name]
+	v, _ := it.objMap.Load(name)
+	return v
 }
 
 func (it *GoMybatisEngine) SetGoroutineIDEnable(enable bool) {

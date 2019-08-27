@@ -1,6 +1,7 @@
 package GoMybatis
 
 import (
+	"context"
 	"fmt"
 	"github.com/agui2200/GoMybatis/logger"
 	"github.com/agui2200/GoMybatis/sessions"
@@ -24,7 +25,7 @@ func AopProxyService(service interface{}, engine sessions.SessionEngine) {
 func AopProxyServiceValue(service reflect.Value, engine sessions.SessionEngine) {
 	var beanType = service.Type().Elem()
 	var beanName = beanType.PkgPath() + beanType.Name()
-	ProxyValue(service, func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value {
+	ProxyValue(service, func(funcField reflect.StructField, field reflect.Value) buildResult {
 		//init data
 		var propagation = tx.PROPAGATION_NEVER
 		var nativeImplFunc = reflect.ValueOf(field.Interface())
@@ -33,7 +34,7 @@ func AopProxyServiceValue(service reflect.Value, engine sessions.SessionEngine) 
 		if haveTx {
 			propagation = tx.NewPropagation(txTag)
 		}
-		var fn = func(arg ProxyArg) []reflect.Value {
+		var fn = func(ctx context.Context, arg ProxyArg) []reflect.Value {
 			var goroutineID int64 //协程id
 			if engine.GoroutineIDEnable() {
 				goroutineID = utils.GoroutineID()
@@ -57,6 +58,7 @@ func AopProxyServiceValue(service reflect.Value, engine sessions.SessionEngine) 
 				//压入map
 				engine.GoroutineSessionMap().Put(goroutineID, session)
 			}
+			session.WithContext(ctx)
 			if !haveTx {
 				var err = session.Begin(session.LastPROPAGATION())
 				if err != nil {

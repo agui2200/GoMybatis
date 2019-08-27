@@ -74,7 +74,7 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 	var returnTypeMap = makeReturnTypeMap(bean.Elem().Type())
 	var beanName = bean.Type().PkgPath() + bean.Type().String()
 
-	ProxyValue(bean, func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value {
+	ProxyValue(bean, func(funcField reflect.StructField, field reflect.Value) buildResult {
 		//构建期
 		var funcName = funcField.Name
 		var returnType = returnTypeMap[funcName]
@@ -94,17 +94,7 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 		}
 		switch funcName {
 		case NewSessionFunc:
-			var proxyFunc = func(arg ProxyArg) []reflect.Value {
-				ctx := context.TODO()
-				if arg.ArgsLen > 0 {
-					for _, a := range arg.Args {
-						if a.Kind() == reflect.Interface {
-							if v, o := a.Interface().(context.Context); o {
-								ctx = v
-							}
-						}
-					}
-				}
+			var proxyFunc = func(ctx context.Context, arg ProxyArg) []reflect.Value {
 				var returnValue *reflect.Value = nil
 				//build return Type
 				if returnType.ReturnOutType != nil {
@@ -120,6 +110,7 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 				if returnValue != nil {
 					// 创建一个 实际的 session 进行注入
 					session := Session(sessionEngine.SessionFactory().NewSessionContext(ctx, beanName, sessions.SessionType_Default))
+					session.WithContext(ctx)
 					var err error
 					returnValue.Elem().Set(reflect.ValueOf(session).Elem().Addr().Convert(*returnType.ReturnOutType))
 					return buildReturnValues(returnType, returnValue, err)
@@ -128,7 +119,7 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 			}
 			return proxyFunc
 		default:
-			var proxyFunc = func(arg ProxyArg) []reflect.Value {
+			var proxyFunc = func(ctx context.Context, arg ProxyArg) []reflect.Value {
 				var returnValue *reflect.Value = nil
 				//build return Type
 				if returnType.ReturnOutType != nil {
@@ -141,8 +132,10 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 					}
 					returnValue = &returnV
 				}
+				// 取出context
+
 				//exe sql
-				var e = exeMethodByXml(mapper.xml.Tag, beanName, sessionEngine, arg, mapper.nodes, resultMap, returnValue)
+				var e = exeMethodByXml(ctx, mapper.xml.Tag, beanName, sessionEngine, arg, mapper.nodes, resultMap, returnValue)
 				return buildReturnValues(returnType, returnValue, e)
 			}
 			return proxyFunc
@@ -351,7 +344,7 @@ func findMapperXml(mapperTree map[string]etree.Token, methodName string) *etree.
 	return nil
 }
 
-func exeMethodByXml(elementType xml.ElementType, beanName string, sessionEngine sessions.SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*sqlbuilder.ResultProperty, returnValue *reflect.Value) error {
+func exeMethodByXml(ctx context.Context, elementType xml.ElementType, beanName string, sessionEngine sessions.SessionEngine, proxyArg ProxyArg, nodes []ast.Node, resultMap map[string]*sqlbuilder.ResultProperty, returnValue *reflect.Value) error {
 	//TODO　CallBack and Session must Location in build step!
 	var session sessions.Session
 	var sql string
@@ -381,6 +374,7 @@ func exeMethodByXml(elementType xml.ElementType, beanName string, sessionEngine 
 		session = s
 		defer session.Close()
 	}
+	session.WithContext(ctx)
 	var haveLastReturnValue = returnValue != nil && (*returnValue).IsNil() == false
 	//do CRUD
 	if elementType == xml.Element_Select && haveLastReturnValue {

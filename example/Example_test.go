@@ -20,8 +20,8 @@ type ExampleActivityMapper struct {
 	GoMybatis.SessionSupport                                                      //session事务操作 写法1.  ExampleActivityMapper.SessionSupport.NewSession()
 	NewSession               func(ctx context.Context) (GoMybatis.Session, error) //session事务操作.写法2   ExampleActivityMapper.NewSession()
 	//模板示例
-	SelectTemplete      func(name string) ([]Activity, error) `mapperParams:"name"`
-	SelectCountTemplete func(name string) (int64, error)      `mapperParams:"name"`
+	SelectTemplete      func(ctx context.Context, name string) ([]Activity, error) `mapperParams:"name"`
+	SelectCountTemplete func(name string) (int64, error)                           `mapperParams:"name"`
 	InsertTemplete      func(arg Activity) (int64, error)
 	InsertTempleteBatch func(args []Activity) (int64, error) `mapperParams:"args"`
 	UpdateTemplete      func(arg Activity) (int64, error)    `mapperParams:"name"`
@@ -227,7 +227,7 @@ func Test_local_Transation(t *testing.T) {
 	}
 	//使用事务
 	ctx := context.WithValue(context.TODO(), "test_id", "1")
-	var session, err = exampleActivityMapper.SessionSupport.NewSession(ctx)
+	var session, err = exampleActivityMapper.NewSession(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,8 +280,9 @@ func TestSelectTemplete(t *testing.T) {
 		fmt.Println("no database url define in MysqlConfig.go , you must set the mysql link!")
 		return
 	}
+	ctx := context.WithValue(context.TODO(), "test", "testval")
 	//使用mapper
-	var result, err = exampleActivityMapper.SelectTemplete("hello")
+	var result, err = exampleActivityMapper.SelectTemplete(ctx, "hello")
 	if err != nil {
 		panic(err)
 	}

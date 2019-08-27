@@ -1,6 +1,7 @@
 package GoMybatis
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -12,8 +13,8 @@ type TestMapper struct {
 
 func TestUseMapperValue(t *testing.T) {
 	var test = TestMapper{}
-	ProxyValue(reflect.ValueOf(&test), func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value {
-		return func(arg ProxyArg) []reflect.Value {
+	ProxyValue(reflect.ValueOf(&test), func(funcField reflect.StructField, field reflect.Value) buildResult {
+		return func(ctx context.Context, arg ProxyArg) []reflect.Value {
 			if len(arg.Args) <= 0 {
 				t.Fatal("AopProxy() args len = 0")
 			}
@@ -25,6 +26,7 @@ func TestUseMapperValue(t *testing.T) {
 			returns = append(returns, reflect.ValueOf("yes return string="+arg.Args[0].Interface().(string)))
 			returns = append(returns, reflect.Zero(reflect.TypeOf(&e).Elem()))
 			return returns
+
 		}
 	})
 
@@ -37,8 +39,8 @@ func TestUseMapperValue(t *testing.T) {
 
 func TestUseMapper(t *testing.T) {
 	var test = TestMapper{}
-	Proxy(&test, func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value {
-		return func(arg ProxyArg) []reflect.Value {
+	Proxy(&test, func(funcField reflect.StructField, field reflect.Value) buildResult {
+		return func(ctx context.Context, arg ProxyArg) []reflect.Value {
 			if len(arg.Args) <= 0 {
 				t.Fatal("AopProxy() args len = 0")
 			}

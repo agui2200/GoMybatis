@@ -1,6 +1,7 @@
 package GoMybatis
 
 import (
+	"context"
 	"reflect"
 	"strings"
 )
@@ -10,8 +11,11 @@ type TagArg struct {
 	Index int
 }
 
+type build func(funcField reflect.StructField, field reflect.Value) buildResult
+type buildResult func(ctx context.Context, arg ProxyArg) []reflect.Value
+
 // AopProxy 可写入每个函数代理方法.proxyPtr:代理对象指针，buildFunc:构建代理函数
-func Proxy(proxyPtr interface{}, buildFunc func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value) {
+func Proxy(proxyPtr interface{}, buildFunc build) {
 	v := reflect.ValueOf(proxyPtr)
 	if v.Kind() != reflect.Ptr {
 		panic("AopProxy: AopProxy arg must be a pointer")
@@ -20,15 +24,15 @@ func Proxy(proxyPtr interface{}, buildFunc func(funcField reflect.StructField, f
 }
 
 // AopProxy 可写入每个函数代理方法
-func ProxyValue(mapperValue reflect.Value, buildFunc func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value) {
+func ProxyValue(mapperValue reflect.Value, buildFunc build) {
 	buildProxy(mapperValue, buildFunc)
 }
 
-func buildProxy(v reflect.Value, buildFunc func(funcField reflect.StructField, field reflect.Value) func(arg ProxyArg) []reflect.Value) {
-	for{
+func buildProxy(v reflect.Value, buildFunc build) {
+	for {
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
-		}else{
+		} else {
 			break
 		}
 	}
@@ -47,8 +51,8 @@ func buildProxy(v reflect.Value, buildFunc func(funcField reflect.StructField, f
 	count := obj.NumField()
 	for i := 0; i < count; i++ {
 		f := obj.Field(i)
-		ft := f.Type()
 		sf := et.Field(i)
+		ft := f.Type()
 		if ft.Kind() == reflect.Ptr {
 			ft = ft.Elem()
 		}
@@ -72,14 +76,21 @@ func buildProxy(v reflect.Value, buildFunc func(funcField reflect.StructField, f
 	}
 }
 
-func buildRemoteMethod(source reflect.Value, f reflect.Value, ft reflect.Type, sf reflect.StructField, proxyFunc func(arg ProxyArg) []reflect.Value) {
+func buildRemoteMethod(source reflect.Value, f reflect.Value, ft reflect.Type, sf reflect.StructField, proxyFunc buildResult) {
 	var tagParams []string
 	var mapperParams = sf.Tag.Get(`mapperParams`)
 	if mapperParams != `` {
 		tagParams = strings.Split(mapperParams, `,`)
 	}
 	var tagParamsLen = len(tagParams)
-	if tagParamsLen > ft.NumIn() {
+	var inputCount int
+	for i := 0; i < ft.NumIn(); i++ {
+		if ft.In(i).String() == GoMybatis_Context {
+			continue
+		}
+		inputCount++
+	}
+	if tagParamsLen > inputCount {
 		panic(`[GoMybatisProxy] method fail! the tag "mapperParams" length can not > arg length ! filed=` + sf.Name)
 	}
 	var tagArgs = make([]TagArg, 0)
@@ -93,11 +104,22 @@ func buildRemoteMethod(source reflect.Value, f reflect.Value, ft reflect.Type, s
 		}
 	}
 	var tagArgsLen = len(tagArgs)
-	if tagArgsLen > 0 && ft.NumIn() != tagArgsLen {
+	if tagArgsLen > 0 && inputCount != tagArgsLen {
 		panic(`[GoMybatisProxy] method fail! the tag "mapperParams" length  != args length ! filed = ` + sf.Name)
 	}
 	var fn = func(args []reflect.Value) (results []reflect.Value) {
-		proxyResults := proxyFunc(ProxyArg{}.New(tagArgs, args))
+		ctx := context.TODO()
+		// 找出context 进行注入和args扔掉 context
+		for _, arg := range args {
+
+			if arg.Kind() == reflect.Interface {
+				arg = arg.Elem()
+				if v, o := arg.Interface().(context.Context); o {
+					ctx = v
+				}
+			}
+		}
+		proxyResults := proxyFunc(ctx, ProxyArg{}.New(tagArgs, args))
 		for _, returnV := range proxyResults {
 			results = append(results, returnV)
 		}
