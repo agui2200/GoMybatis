@@ -4,18 +4,32 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/agui2200/GoMybatis/logger"
 	"github.com/agui2200/GoMybatis/sessions/tx"
 	"github.com/agui2200/GoMybatis/sqlbuilder"
 	"github.com/agui2200/GoMybatis/utils"
+	"github.com/go-sql-driver/mysql"
+	"github.com/opentracing/opentracing-go"
 	"strconv"
 )
+
+const (
+	driverMysql = "mysql"
+)
+
+type urlInfo struct {
+	userName string
+	instance string
+	addr     string
+}
 
 //本地直连session
 type LocalSession struct {
 	SessionId      string
 	driver         string
 	url            string
+	urlInfo        urlInfo
 	db             *sql.DB
 	stmt           *sql.Stmt
 	txStack        tx.TxStack
@@ -28,6 +42,16 @@ type LocalSession struct {
 }
 
 func (it LocalSession) New(driver string, url string, db *sql.DB, logSystem logger.Log) LocalSession {
+	switch driver {
+	case driverMysql:
+		c, err := mysql.ParseDSN(url)
+		if err != nil {
+			panic(fmt.Sprintf("[GoMybatis] connect url:[%s] , [%s]", url, err.Error()))
+		}
+		it.urlInfo.addr = c.Addr
+		it.urlInfo.userName = c.User
+		it.urlInfo.instance = c.DBName
+	}
 	return LocalSession{
 		SessionId: utils.CreateUUID(),
 		db:        db,
@@ -35,6 +59,7 @@ func (it LocalSession) New(driver string, url string, db *sql.DB, logSystem logg
 		driver:    driver,
 		url:       url,
 		logSystem: logSystem,
+		ctx:       it.ctx,
 	}
 }
 
@@ -271,18 +296,28 @@ func (it *LocalSession) Close() {
 	}
 }
 
-func (it *LocalSession) Query(sqlorArgs string) ([]map[string][]byte, error) {
+func (it *LocalSession) Query(sqlorArgs string) (res []map[string][]byte, err error) {
 	if it.isClosed == true {
 		return nil, utils.NewError("LocalSession", " can not Query() a Closed Session!")
 	}
 	if it.session != nil {
 		return it.session.Query(sqlorArgs)
 	}
-
+	// 开启 span
+	span, _ := it.startSpanFromContext("query")
+	if span != nil {
+		span.SetTag("db.statement", sqlorArgs)
+		defer func() {
+			if err != nil {
+				it.errorToSpan(span, err)
+			}
+			span.Finish()
+		}()
+	}
 	var rows *sql.Rows
-	var err error
 	var t, _ = it.txStack.Last()
 	if t != nil {
+
 		rows, err = t.QueryContext(it.ctx, sqlorArgs)
 		err = it.dbErrorPack(err)
 	} else {
@@ -339,4 +374,20 @@ func (it *LocalSession) dbErrorPack(e error) error {
 
 func (it *LocalSession) WithContext(ctx context.Context) {
 	it.ctx = ctx
+}
+
+func (it *LocalSession) startSpanFromContext(opName string) (s opentracing.Span, c context.Context) {
+	s, c = opentracing.StartSpanFromContext(it.ctx, opName)
+	s.SetTag("db.instance", it.url)
+	s.SetTag("db.type", "sql")
+	s.SetTag("db.user", it.SessionId)
+	s.SetTag("peer.address", it.urlInfo.addr)
+	s.SetTag("span.kind", "client")
+	//s.SetTag("db.statement", sql)
+	return
+}
+
+func (it *LocalSession) errorToSpan(s opentracing.Span, err error) {
+	s.SetTag("event", "error")
+	s.SetTag("error.object", err)
 }
