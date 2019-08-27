@@ -110,16 +110,18 @@ func buildRemoteMethod(source reflect.Value, f reflect.Value, ft reflect.Type, s
 	var fn = func(args []reflect.Value) (results []reflect.Value) {
 		ctx := context.TODO()
 		// 找出context 进行注入和args扔掉 context
+		var newArgs []reflect.Value
 		for _, arg := range args {
-
 			if arg.Kind() == reflect.Interface {
 				arg = arg.Elem()
 				if v, o := arg.Interface().(context.Context); o {
 					ctx = v
 				}
+				continue
 			}
+			newArgs = append(newArgs, arg)
 		}
-		proxyResults := proxyFunc(ctx, ProxyArg{}.New(tagArgs, args))
+		proxyResults := proxyFunc(ctx, ProxyArg{}.New(tagArgs, newArgs))
 		for _, returnV := range proxyResults {
 			results = append(results, returnV)
 		}

@@ -380,7 +380,7 @@ func (it *LocalSession) startSpanFromContext(opName string) (s opentracing.Span,
 	s, c = opentracing.StartSpanFromContext(it.ctx, opName)
 	s.SetTag("db.instance", it.url)
 	s.SetTag("db.type", "sql")
-	s.SetTag("db.user", it.SessionId)
+	s.SetTag("db.user", it.urlInfo.userName)
 	s.SetTag("peer.address", it.urlInfo.addr)
 	s.SetTag("span.kind", "client")
 	//s.SetTag("db.statement", sql)
