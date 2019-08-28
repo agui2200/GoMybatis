@@ -423,7 +423,8 @@ func (it *LocalSession) WithContext(ctx context.Context) {
 }
 
 func (it *LocalSession) startSpanFromContext(opName string) (s opentracing.Span, c context.Context) {
-	s, c = opentracing.StartSpanFromContext(it.ctx, opName)
+	prefix := "goMybatis"
+	s, c = opentracing.StartSpanFromContext(it.ctx, prefix+"."+opName)
 	s.SetTag("db.instance", it.url)
 	s.SetTag("db.type", "sql")
 	s.SetTag("db.user", it.urlInfo.userName)
@@ -437,18 +438,14 @@ func (it *LocalSession) errorToSpan(s opentracing.Span, err error) {
 	s.SetTag("event", "error")
 	// 加入一些runtime的内容，方便调试
 	pc := make([]uintptr, 10) // at least 1 entry needed
-	n := runtime.Callers(-2, pc)
+	n := runtime.Callers(8, pc)
 	frames := runtime.CallersFrames(pc[:n])
 	s.SetTag("message", err)
-	var stack []map[string]interface{}
+	var stack []string
 	for {
 		frame, more := frames.Next()
-		//fmt.Printf("%s:%d %s\n", frame.File, frame.Line, frame.Function)
-		stack = append(stack, map[string]interface{}{
-			"file":     frame.File,
-			"line":     frame.Line,
-			"function": frame.Function,
-		})
+		m := fmt.Sprintf("%s:%d %s \r\n", frame.File, frame.Line, frame.Function)
+		stack = append(stack, m)
 		if !more {
 			break
 		}

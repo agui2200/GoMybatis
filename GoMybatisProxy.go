@@ -113,7 +113,7 @@ func buildRemoteMethod(source reflect.Value, f reflect.Value, ft reflect.Type, s
 		var newArgs []reflect.Value
 		for _, arg := range args {
 			if arg.Kind() == reflect.Interface {
-				arg = arg.Elem()
+				//arg = arg.Elem()
 				if v, o := arg.Interface().(context.Context); o {
 					ctx = v
 				}

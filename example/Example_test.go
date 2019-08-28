@@ -32,7 +32,7 @@ type ExampleActivityMapper struct {
 	SelectByIdMaps    func(ids map[int]string) ([]Activity, error) `mapperParams:"ids"`
 	SelectAll         func() ([]map[string]string, error)
 	SelectByCondition func(name *string, startTime *time.Time, endTime *time.Time, page *int, size *int) ([]Activity, error) `mapperParams:"name,startTime,endTime,page,size"`
-	UpdateById        func(session *GoMybatis.Session, arg Activity) (int64, error)
+	UpdateById        func(ctx context.Context, session *GoMybatis.Session, arg Activity) (int64, error)
 	Insert            func(arg Activity) (int64, error)
 	CountByCondition  func(name string, startTime time.Time, endTime time.Time) (int, error) `mapperParams:"name,startTime,endTime"`
 	DeleteById        func(id string) (int64, error)                                         `mapperParams:"id"`
@@ -123,7 +123,7 @@ func Test_update(t *testing.T) {
 		Id:   "171",
 		Name: "rs168",
 	}
-	var updateNum, e = exampleActivityMapper.UpdateById(nil, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	var updateNum, e = exampleActivityMapper.UpdateById(context.TODO(), nil, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
 	fmt.Println("updateNum=", updateNum)
 	if e != nil {
 		panic(e)
@@ -239,7 +239,7 @@ func Test_local_Transation(t *testing.T) {
 		Id:   "170",
 		Name: "rs168-8",
 	}
-	var updateNum, e = exampleActivityMapper.UpdateById(&session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	var updateNum, e = exampleActivityMapper.UpdateById(ctx, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
 	fmt.Println("updateNum=", updateNum)
 	if e != nil {
 		panic(e)

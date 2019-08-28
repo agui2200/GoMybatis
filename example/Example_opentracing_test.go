@@ -14,7 +14,11 @@ import (
 	"time"
 )
 
-func Test_queryTracing(t *testing.T) {
+var tapp *traceapp.App
+var ctx context.Context
+
+func initOpentracing() {
+	var err error
 	// Create a recent in-memory store, evicting data after 20s.
 	//
 	// The store defines where information about traces (i.e. spans and
@@ -38,7 +42,7 @@ func Test_queryTracing(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tapp, err := traceapp.New(nil, url)
+	tapp, err = traceapp.New(nil, url)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,16 +62,53 @@ func Test_queryTracing(t *testing.T) {
 	opentracing.InitGlobalTracer(tracer) // 一定要加
 
 	rootCtx := context.Background()
-	s, ctx := opentracing.StartSpanFromContextWithTracer(rootCtx, tracer, "testQuery")
+	s, sctx := opentracing.StartSpanFromContextWithTracer(rootCtx, tracer, "testQuery")
 	if MysqlUri == "" || MysqlUri == "*" {
-		fmt.Println("no database url define in MysqlConfig.go , you must set the mysql link!")
-		return
+		panic("no database url define in MysqlConfig.go , you must set the mysql link!")
+
 	}
-	fmt.Println(s, ctx)
+	fmt.Println(s, sctx)
+	ctx = sctx
+}
+
+func Test_queryTracing(t *testing.T) {
+	initOpentracing()
 	//使用mapper
 	result, err := exampleActivityMapper.SelectTemplete(ctx, "hello")
 	fmt.Println("result=", result, "error=", err)
 	log.Println("Appdash web UI running on HTTP :8700")
 	log.Fatal(http.ListenAndServe(":8700", tapp))
+}
 
+func Test_updateTracing(t *testing.T) {
+	initOpentracing()
+	//使用mapper
+	result, err := exampleActivityMapper.UpdateById(ctx, nil, Activity{Id: "1", Name: "testName"})
+	fmt.Println("result=", result, "error=", err)
+	log.Println("Appdash web UI running on HTTP :8700")
+	log.Fatal(http.ListenAndServe(":8700", tapp))
+}
+
+// 本地事务的例子
+func Test_txTracing(t *testing.T) {
+	initOpentracing()
+	var session, err = exampleActivityMapper.NewSession(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = session.Begin(nil) //开启事务
+	if err != nil {
+		t.Fatal(err)
+	}
+	var activityBean = Activity{
+		Id:   "170",
+		Name: "rs168-8",
+	}
+	var updateNum, e = exampleActivityMapper.UpdateById(ctx, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	fmt.Println("updateNum=", updateNum)
+	if e != nil {
+		panic(e)
+	}
+	session.Commit() //提交事务
+	session.Close()  //关闭事务
 }
