@@ -192,19 +192,6 @@ func (it *LocalSession) Commit() (err error) {
 	if it.isClosed == true {
 		return utils.NewError("LocalSession", " can not Commit() a Closed Session!")
 	}
-	var parentSpan context.Context
-	span, _ := it.startSpanFromContext("commit")
-	defer func() {
-		if span != nil {
-			if err != nil {
-				it.errorToSpan(span, err)
-			}
-			span.Finish()
-			if parentSpan != nil {
-				opentracing.SpanFromContext(parentSpan).Finish()
-			}
-		}
-	}()
 
 	if it.session != nil {
 		var e = it.session.Commit()
@@ -216,7 +203,19 @@ func (it *LocalSession) Commit() (err error) {
 	}
 	var t *sql.Tx
 	var p *tx.Propagation
-	parentSpan, t, p = it.txStack.Pop()
+	ctx, t, p := it.txStack.Pop()
+	span, _ := opentracing.StartSpanFromContext(ctx, "commit")
+	defer func() {
+		if span != nil {
+			if err != nil {
+				it.errorToSpan(span, err)
+			}
+			span.Finish()
+			if ctx != nil {
+				opentracing.SpanFromContext(ctx).Finish()
+			}
+		}
+	}()
 	if t != nil && p != nil {
 		if *p == tx.PROPAGATION_NESTED {
 			if it.savePointStack == nil {
@@ -383,9 +382,6 @@ func (it *LocalSession) Exec(sqlorArgs string) (res *Result, err error) {
 	if it.isClosed == true {
 		return nil, utils.NewError("LocalSession", " can not Exec() a Closed Session!")
 	}
-	if it.session != nil {
-		return it.session.Exec(sqlorArgs)
-	}
 	// 开启 span
 	span, _ := it.startSpanFromContext("exec")
 	if span != nil {
@@ -396,6 +392,10 @@ func (it *LocalSession) Exec(sqlorArgs string) (res *Result, err error) {
 			}
 			span.Finish()
 		}()
+	}
+
+	if it.session != nil {
+		return it.session.Exec(sqlorArgs)
 	}
 
 	var result sql.Result

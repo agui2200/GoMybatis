@@ -24,8 +24,8 @@ type ExampleActivityMapper struct {
 	SelectCountTemplete func(name string) (int64, error)                           `mapperParams:"name"`
 	InsertTemplete      func(arg Activity) (int64, error)
 	InsertTempleteBatch func(args []Activity) (int64, error) `mapperParams:"args"`
-	UpdateTemplete      func(arg Activity) (int64, error)    `mapperParams:"name"`
-	DeleteTemplete      func(name string) (int64, error)     `mapperParams:"name"`
+	UpdateTemplete      func(session *GoMybatis.Session, arg Activity) (int64, error)
+	DeleteTemplete      func(name string) (int64, error) `mapperParams:"name"`
 
 	//传统mybatis示例
 	SelectByIds       func(ids []string) ([]Activity, error)       `mapperParams:"ids"`
@@ -356,7 +356,7 @@ func TestUpdateTemplete(t *testing.T) {
 	}
 	//会自动生成乐观锁和逻辑删除字段 set version= * where version = * and delete_flag = *
 	// update set name = 'rs168',version = 1 from biz_activity where name = 'rs168' and delete_flag = 1 and version = 0
-	var updateNum, e = exampleActivityMapper.UpdateTemplete(activityBean)
+	var updateNum, e = exampleActivityMapper.UpdateTemplete(nil, activityBean)
 	fmt.Println("updateNum=", updateNum)
 	if e != nil {
 		panic(e)
@@ -403,7 +403,7 @@ func initTestService() TestService {
 			//TODO 此处可能会因为activitys长度为0 导致数组越界 painc,painc 为运行时异常 框架自动回滚事务
 			var activity = activitys[0]
 			activity.Remark = remark
-			updateNum, err := testService.exampleActivityMapper.UpdateTemplete(activity)
+			updateNum, err := testService.exampleActivityMapper.UpdateTemplete(nil, activity)
 			if err != nil {
 				panic(err)
 			}
@@ -420,7 +420,7 @@ func initTestService() TestService {
 			}
 			var activity = activitys[0]
 			activity.Name = name
-			updateNum, err := testService.exampleActivityMapper.UpdateTemplete(activity)
+			updateNum, err := testService.exampleActivityMapper.UpdateTemplete(nil, activity)
 			if err != nil {
 				panic(err)
 			}

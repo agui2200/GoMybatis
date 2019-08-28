@@ -156,8 +156,18 @@ func Test_insideTx(t *testing.T) {
 	if e != nil {
 		panic(e)
 	}
-	session.Commit()
+	activityBean.Id = "170"
+	activityBean.Name = "test-123456789"
+	updateNum, e = exampleActivityMapper.UpdateById(nil, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	if e != nil {
+		panic(e)
+	}
+	updateNum, e = exampleActivityMapper.UpdateTemplete(&session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	if e != nil {
+		panic(e)
+	}
 	session.Rollback()
+	session.Commit()
 	session.Close() //关闭事务
 	rootSpan.Finish()
 	log.Fatal(http.ListenAndServe(":8700", tapp))
