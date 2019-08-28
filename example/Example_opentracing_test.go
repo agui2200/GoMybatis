@@ -16,6 +16,7 @@ import (
 
 var tapp *traceapp.App
 var ctx context.Context
+var rootSpan opentracing.Span
 
 func initOpentracing() {
 	var err error
@@ -69,12 +70,14 @@ func initOpentracing() {
 	}
 	fmt.Println(s, sctx)
 	ctx = sctx
+	rootSpan = s
 }
 
 func Test_queryTracing(t *testing.T) {
 	initOpentracing()
 	//使用mapper
 	result, err := exampleActivityMapper.SelectTemplete(ctx, "hello")
+	rootSpan.Finish()
 	fmt.Println("result=", result, "error=", err)
 	log.Println("Appdash web UI running on HTTP :8700")
 	log.Fatal(http.ListenAndServe(":8700", tapp))
@@ -84,6 +87,7 @@ func Test_updateTracing(t *testing.T) {
 	initOpentracing()
 	//使用mapper
 	result, err := exampleActivityMapper.UpdateById(ctx, nil, Activity{Id: "1", Name: "testName"})
+	rootSpan.Finish()
 	fmt.Println("result=", result, "error=", err)
 	log.Println("Appdash web UI running on HTTP :8700")
 	log.Fatal(http.ListenAndServe(":8700", tapp))
@@ -104,11 +108,53 @@ func Test_txTracing(t *testing.T) {
 		Id:   "170",
 		Name: "rs168-8",
 	}
-	var updateNum, e = exampleActivityMapper.UpdateById(ctx, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	var updateNum, e = exampleActivityMapper.UpdateById(nil, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
 	fmt.Println("updateNum=", updateNum)
+	if e != nil {
+		panic(e)
+	}
+	activityBean.Id = "171"
+	activityBean.Name = "test-123"
+	updateNum, e = exampleActivityMapper.UpdateById(nil, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
 	if e != nil {
 		panic(e)
 	}
 	session.Commit() //提交事务
 	session.Close()  //关闭事务
+	rootSpan.Finish()
+	log.Fatal(http.ListenAndServe(":8700", tapp))
+}
+
+// 嵌套事务
+func Test_insideTx(t *testing.T) {
+	initOpentracing()
+	var session, err = exampleActivityMapper.NewSession(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = session.Begin(nil) //开启事务
+	if err != nil {
+		t.Fatal(err)
+	}
+	var activityBean = Activity{
+		Id:         "170",
+		Name:       "rs168-8",
+		DeleteFlag: 1,
+	}
+	var updateNum, e = exampleActivityMapper.UpdateById(nil, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	fmt.Println("updateNum=", updateNum)
+	if e != nil {
+		panic(e)
+	}
+	activityBean.Id = "170"
+	activityBean.Name = "test-123456"
+	updateNum, e = exampleActivityMapper.UpdateById(nil, &session, activityBean) //sessionId 有值则使用已经创建的session，否则新建一个session
+	if e != nil {
+		panic(e)
+	}
+	session.Rollback()
+	session.Commit()
+	session.Close() //关闭事务
+	rootSpan.Finish()
+	log.Fatal(http.ListenAndServe(":8700", tapp))
 }

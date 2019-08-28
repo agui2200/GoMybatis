@@ -68,130 +68,7 @@ func (it *LocalSession) Id() string {
 	return it.SessionId
 }
 
-func (it *LocalSession) Rollback() (err error) {
-	defer func() {
-		span, ctx := it.startSpanFromContext("begin")
-		if span != nil {
-			it.ctx = ctx
-			if err != nil {
-				it.errorToSpan(span, err)
-				span.Finish()
-			}
-		}
-	}()
-	if it.isClosed == true {
-		return utils.NewError("LocalSession", " can not Rollback() a Closed Session!")
-	}
-
-	if it.session != nil {
-		var e = it.session.Rollback()
-		it.session.Close()
-		it.session = nil
-		if e != nil {
-			return e
-		}
-	}
-
-	var t, p = it.txStack.Pop()
-	if t != nil && p != nil {
-		if *p == tx.PROPAGATION_NESTED {
-			if it.savePointStack == nil {
-				var stack = tx.SavePointStack{}.New()
-				it.savePointStack = &stack
-			}
-			var point = it.savePointStack.Pop()
-			if point != nil {
-				if it.logSystem != nil {
-					it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] exec ====================" + "rollback to " + *point))
-				}
-				_, e := t.Exec("rollback to " + *point)
-				e = it.dbErrorPack(e)
-				if e != nil {
-					return e
-				}
-			}
-		}
-
-		if it.txStack.Len() == 0 {
-			if it.logSystem != nil {
-				it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Rollback Session"))
-			}
-			var err = t.Rollback()
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (it *LocalSession) Commit() (err error) {
-	defer func() {
-		span, ctx := it.startSpanFromContext("commit")
-		if span != nil {
-			it.ctx = ctx
-			if err != nil {
-				it.errorToSpan(span, err)
-				span.Finish()
-			}
-		}
-	}()
-	if it.isClosed == true {
-		return utils.NewError("LocalSession", " can not Commit() a Closed Session!")
-	}
-
-	if it.session != nil {
-		var e = it.session.Commit()
-		it.session.Close()
-		it.session = nil
-		if e != nil {
-			return e
-		}
-	}
-
-	var t, p = it.txStack.Pop()
-	if t != nil && p != nil {
-
-		if *p == tx.PROPAGATION_NESTED {
-			if it.savePointStack == nil {
-				var stack = tx.SavePointStack{}.New()
-				it.savePointStack = &stack
-			}
-			var pId = "p" + strconv.Itoa(it.txStack.Len()+1)
-			it.savePointStack.Push(pId)
-			if it.logSystem != nil {
-				it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] exec " + "savepoint " + pId))
-			}
-			_, e := t.Exec("savepoint " + pId)
-			e = it.dbErrorPack(e)
-			if e != nil {
-				return e
-			}
-		}
-		if it.txStack.Len() == 0 {
-			if it.logSystem != nil {
-				it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Commit tx session:" + it.Id()))
-			}
-			var err = t.Commit()
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (it *LocalSession) Begin(p *tx.Propagation) (err error) {
-	defer func() {
-		span, ctx := it.startSpanFromContext("begin")
-		if span != nil {
-			it.ctx = ctx
-			if err != nil {
-				it.errorToSpan(span, err)
-				span.Finish()
-			}
-		}
-	}()
 	var propagation = ""
 	if p != nil {
 		propagation = tx.ToString(*p)
@@ -202,7 +79,20 @@ func (it *LocalSession) Begin(p *tx.Propagation) (err error) {
 	if it.isClosed == true {
 		return utils.NewError("LocalSession", " can not Begin() a Closed Session!")
 	}
-
+	if p == nil {
+		pp := tx.NewPropagation("")
+		p = &pp
+	}
+	defer func() {
+		span, ctx := it.startSpanFromContext("begin")
+		if span != nil {
+			it.ctx = ctx
+			if err != nil {
+				it.errorToSpan(span, err)
+				span.Finish()
+			}
+		}
+	}()
 	if p != nil {
 		switch *p {
 		case tx.PROPAGATION_REQUIRED: //end
@@ -296,6 +186,123 @@ func (it *LocalSession) Begin(p *tx.Propagation) (err error) {
 	return nil
 }
 
+func (it *LocalSession) Commit() (err error) {
+	if it.isClosed == true {
+		return utils.NewError("LocalSession", " can not Commit() a Closed Session!")
+	}
+	span, _ := it.startSpanFromContext("commit")
+	defer func() {
+		if span != nil {
+			if err != nil {
+				it.errorToSpan(span, err)
+			}
+			span.Finish()
+			if span := opentracing.SpanFromContext(it.ctx); span != nil {
+				span.Finish()
+			}
+		}
+	}()
+
+	if it.session != nil {
+		var e = it.session.Commit()
+		it.session.Close()
+		it.session = nil
+		if e != nil {
+			return e
+		}
+	}
+
+	var t, p = it.txStack.Pop()
+	if t != nil && p != nil {
+
+		if *p == tx.PROPAGATION_NESTED {
+			if it.savePointStack == nil {
+				var stack = tx.SavePointStack{}.New()
+				it.savePointStack = &stack
+			}
+			var pId = "p" + strconv.Itoa(it.txStack.Len()+1)
+			it.savePointStack.Push(pId)
+			if it.logSystem != nil {
+				it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] exec " + "savepoint " + pId))
+			}
+			_, e := t.Exec("savepoint " + pId)
+			e = it.dbErrorPack(e)
+			if e != nil {
+				return e
+			}
+		}
+		if it.txStack.Len() == 0 {
+			if it.logSystem != nil {
+				it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Commit tx session:" + it.Id()))
+			}
+			var err = t.Commit()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (it *LocalSession) Rollback() (err error) {
+	if it.isClosed == true {
+		return utils.NewError("LocalSession", " can not Rollback() a Closed Session!")
+	}
+	span, _ := it.startSpanFromContext("rollback")
+	defer func() {
+		if span != nil {
+			if err != nil {
+				it.errorToSpan(span, err)
+			}
+			span.Finish()
+			if span := opentracing.SpanFromContext(it.ctx); span != nil {
+				span.Finish()
+			}
+		}
+	}()
+
+	if it.session != nil {
+		var e = it.session.Rollback()
+		it.session.Close()
+		it.session = nil
+		if e != nil {
+			return e
+		}
+	}
+
+	var t, p = it.txStack.Pop()
+	if t != nil && p != nil {
+		if *p == tx.PROPAGATION_NESTED {
+			if it.savePointStack == nil {
+				var stack = tx.SavePointStack{}.New()
+				it.savePointStack = &stack
+			}
+			var point = it.savePointStack.Pop()
+			if point != nil {
+				if it.logSystem != nil {
+					it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] exec ====================" + "rollback to " + *point))
+				}
+				_, e := t.Exec("rollback to " + *point)
+				e = it.dbErrorPack(e)
+				if e != nil {
+					return e
+				}
+			}
+		}
+
+		if it.txStack.Len() == 0 {
+			if it.logSystem != nil {
+				it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Rollback Session"))
+			}
+			var err = t.Rollback()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (it *LocalSession) LastPROPAGATION() *tx.Propagation {
 	if it.txStack.Len() != 0 {
 		var _, pr = it.txStack.Last()
@@ -305,9 +312,6 @@ func (it *LocalSession) LastPROPAGATION() *tx.Propagation {
 }
 
 func (it *LocalSession) Close() {
-	if span := opentracing.SpanFromContext(it.ctx); span != nil {
-		span.Finish()
-	}
 	if it.logSystem != nil {
 		it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Close session"))
 	}
@@ -419,7 +423,9 @@ func (it *LocalSession) dbErrorPack(e error) error {
 }
 
 func (it *LocalSession) WithContext(ctx context.Context) {
-	it.ctx = ctx
+	if it.ctx == nil {
+		it.ctx = ctx
+	}
 }
 
 func (it *LocalSession) startSpanFromContext(opName string) (s opentracing.Span, c context.Context) {
@@ -428,6 +434,8 @@ func (it *LocalSession) startSpanFromContext(opName string) (s opentracing.Span,
 	s.SetTag("db.instance", it.url)
 	s.SetTag("db.type", "sql")
 	s.SetTag("db.user", it.urlInfo.userName)
+	s.SetTag("db.session", it.Id())
+
 	s.SetTag("peer.address", it.urlInfo.addr)
 	s.SetTag("span.kind", "client")
 	//s.SetTag("db.statement", sql)
