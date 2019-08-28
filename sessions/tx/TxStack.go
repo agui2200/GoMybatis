@@ -1,11 +1,15 @@
 package tx
 
-import "database/sql"
+import (
+	"database/sql"
+	"sync"
+)
 
 type TxStack struct {
 	i            int
 	data         []*sql.Tx      //队列
 	propagations []*Propagation //队列
+	l            sync.Mutex     // 队列锁
 }
 
 func (t TxStack) New() TxStack {
@@ -17,21 +21,25 @@ func (t TxStack) New() TxStack {
 }
 
 func (t *TxStack) Push(k *sql.Tx, p *Propagation) {
+	t.l.Lock()
 	t.data = append(t.data, k)
 	t.propagations = append(t.propagations, p)
 	t.i++
+	t.l.Unlock()
 }
 
 func (t *TxStack) Pop() (*sql.Tx, *Propagation) {
 	if t.i == 0 {
 		return nil, nil
 	}
+	t.l.Lock()
 	t.i--
 	var ret = t.data[t.i]
 	t.data = t.data[0:t.i]
 
 	var p = t.propagations[t.i]
 	t.propagations = t.propagations[0:t.i]
+	t.l.Unlock()
 	return ret, p
 }
 func (t *TxStack) First() (*sql.Tx, *Propagation) {
