@@ -437,8 +437,8 @@ func (it *LocalSession) startSpanFromContext(opName string) (s opentracing.Span,
 func (it *LocalSession) errorToSpan(s opentracing.Span, err error) {
 	s.SetTag("event", "error")
 	// 加入一些runtime的内容，方便调试
-	pc := make([]uintptr, 10) // at least 1 entry needed
-	n := runtime.Callers(8, pc)
+	pc := make([]uintptr, 20) // at least 1 entry needed
+	n := runtime.Callers(5, pc)
 	frames := runtime.CallersFrames(pc[:n])
 	s.SetTag("message", err)
 	var stack []string
