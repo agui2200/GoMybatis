@@ -102,7 +102,7 @@ func (it *GoMybatisEngine) SetDataSourceRouter(router sessions.DataSourceRouter)
 
 func (it *GoMybatisEngine) NewSession(mapperName string) (sessions.Session, error) {
 	it.initCheck()
-	var session, err = it.DataSourceRouter().Router(mapperName, sessions.SessionEngine(it))
+	var session, err = it.DataSourceRouter().Router(mapperName, it)
 	return session, err
 }
 
