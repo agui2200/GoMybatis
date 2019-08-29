@@ -61,12 +61,12 @@ func (it *GoMybatisTempleteDecoder) DecodeTree(tree map[string]etree.Token, bean
 			var oldChilds = v.Child
 			v.Child = []etree.Token{}
 			var newTree = v
-			var success, _ = it.Decode(method, newTree, tree)
+			var isTemplete, _ = it.Decode(method, newTree, tree)
 			newTree.Child = append(newTree.Child, oldChilds...)
 			*v = *newTree
 
 			//println
-			if success {
+			if isTemplete {
 				var beanName string
 				if beanType != nil {
 					beanName = beanType.String()

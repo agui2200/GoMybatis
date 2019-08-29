@@ -1,6 +1,8 @@
 package ast
 
-import "github.com/agui2200/GoMybatis/utils"
+import (
+	"github.com/agui2200/GoMybatis/utils"
+)
 
 //判断节点
 type NodeIf struct {

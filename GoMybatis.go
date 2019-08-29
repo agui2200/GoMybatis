@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -447,11 +448,15 @@ func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder sessions.SqlBuilde
 	var customIndex = -1
 	for argIndex, arg := range proxyArg.Args {
 		var argInterface = arg.Interface()
-		if arg.Kind() == reflect.Ptr && arg.IsNil() == false && argInterface != nil && arg.Type().String() == GoMybatis_Session_Ptr {
+		// 判断 session
+		switch {
+		case arg.Kind() == reflect.Ptr && arg.IsNil() == false && argInterface != nil && arg.Type().String() == GoMybatis_Session_Ptr:
 			session = *(argInterface.(*Session))
 			continue
-		} else if argInterface != nil && arg.Kind() == reflect.Interface && arg.Type().String() == GoMybatis_Session {
+		case argInterface != nil && arg.Kind() == reflect.Interface && arg.Type().String() == GoMybatis_Session:
 			session = argInterface.(Session)
+			continue
+		case arg.Kind() == reflect.Ptr && arg.IsNil(), argInterface == nil:
 			continue
 		}
 		if isCustomStruct(arg.Type()) {
@@ -485,7 +490,6 @@ func buildSql(proxyArg ProxyArg, nodes []ast.Node, sqlBuilder sessions.SqlBuilde
 		}
 		paramMap = scanStructArgFields(proxyArg.Args[customIndex], tag)
 	}
-
 	result, err := sqlBuilder.BuildSql(paramMap, nodes)
 	return session, result, err
 }
@@ -514,6 +518,9 @@ func scanStructArgFields(v reflect.Value, tag *TagArg) map[string]interface{} {
 		if field.CanInterface() {
 			obj = field.Interface()
 		}
+		if isDefaultValue(obj) {
+			obj = nil
+		}
 		var jsonKey = typeValue.Tag.Get(`json`)
 		if jsonKey != "" {
 			parameters[jsonKey] = obj
@@ -537,4 +544,12 @@ func isCustomStruct(value reflect.Type) bool {
 	} else {
 		return false
 	}
+}
+
+func isDefaultValue(i interface{}) bool {
+	switch t := i.(type) {
+	case time.Time:
+		return t.IsZero()
+	}
+	return false
 }

@@ -6,11 +6,6 @@ import (
 	"strings"
 )
 
-type TagArg struct {
-	Name  string
-	Index int
-}
-
 type build func(funcField reflect.StructField, field reflect.Value) buildResult
 type buildResult func(ctx context.Context, arg ProxyArg) []reflect.Value
 
