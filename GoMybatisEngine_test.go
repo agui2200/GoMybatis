@@ -173,9 +173,14 @@ func (it *TestSession) Rollback() error {
 func (it *TestSession) Commit() error {
 	return nil
 }
-func (it *TestSession) Begin(*tx.Propagation) error {
+func (it *TestSession) Begin() error {
 	return nil
 }
+
+func (it *TestSession) BeginTrans(p tx.Propagation) error {
+	return nil
+}
+
 func (it *TestSession) Close() {
 
 }

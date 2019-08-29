@@ -68,20 +68,16 @@ func (it *LocalSession) Id() string {
 	return it.SessionId
 }
 
-func (it *LocalSession) Begin(p *tx.Propagation) (err error) {
-	var propagation = ""
-	if p != nil {
-		propagation = tx.ToString(*p)
-	}
+func (it *LocalSession) Begin() error {
+	return it.BeginTrans(tx.PROPAGATION_REQUIRED)
+}
+
+func (it *LocalSession) BeginTrans(p tx.Propagation) (err error) {
 	if it.logSystem != nil {
-		it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Begin session(Propagation:" + propagation + ")"))
+		it.logSystem.Println([]byte("[GoMybatis] [" + it.Id() + "] Begin session(Propagation:" + string(p) + ")"))
 	}
 	if it.isClosed == true {
 		return utils.NewError("LocalSession", " can not Begin() a Closed Session!")
-	}
-	if p == nil {
-		pp := tx.NewPropagation("")
-		p = &pp
 	}
 	span, ctx := it.startSpanFromContext("begin")
 	defer func() {
@@ -93,97 +89,94 @@ func (it *LocalSession) Begin(p *tx.Propagation) (err error) {
 			}
 		}
 	}()
-	if p != nil {
-		switch *p {
-		case tx.PROPAGATION_REQUIRED: //end
-			if it.txStack.Len() > 0 {
-				t, p := it.txStack.Last()
-				it.txStack.Push(ctx, t, p)
-				return nil
-			} else {
-				var t, err = it.db.Begin()
-				err = it.dbErrorPack(err)
-				if err == nil {
-					it.txStack.Push(ctx, t, p)
-				}
-				return err
+	switch p {
+	case tx.PROPAGATION_REQUIRED: //end
+		if it.txStack.Len() > 0 {
+			t, p := it.txStack.Last()
+			it.txStack.Push(ctx, t, p)
+			return nil
+		} else {
+			var t, err = it.db.Begin()
+			err = it.dbErrorPack(err)
+			if err == nil {
+				it.txStack.Push(ctx, t, &p)
 			}
-		case tx.PROPAGATION_SUPPORTS: //end
-			if it.txStack.Len() > 0 {
-				return nil
-			} else {
-				//非事务
-				return nil
-			}
-		case tx.PROPAGATION_MANDATORY: //end
-			if it.txStack.Len() > 0 {
-				return nil
-			} else {
-				return errors.New("[GoMybatis] PROPAGATION_MANDATORY Nested transaction exception! current not have a transaction!")
-			}
-		case tx.PROPAGATION_REQUIRES_NEW:
-			if it.txStack.Len() > 0 {
-				//TODO stop old tx
-			}
-			//TODO new session(tx)
-			var db, e = sql.Open(it.driver, it.url)
-			if e != nil {
-				return e
-			}
-			var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem) //same PROPAGATION_REQUIRES_NEW
-			sess.WithContext(it.ctx)
-			it.session = &sess
-			break
-		case tx.PROPAGATION_NOT_SUPPORTED:
-			if it.txStack.Len() > 0 {
-				//TODO stop old tx
-			}
-			//TODO new session( no tx)
-			var db, e = sql.Open(it.driver, it.url)
-			if e != nil {
-				return e
-			}
-			var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem)
-			sess.WithContext(it.ctx)
-			it.session = &sess
-			break
-		case tx.PROPAGATION_NEVER: //END
-			if it.txStack.Len() > 0 {
-				return errors.New("[GoMybatis] PROPAGATION_NEVER  Nested transaction exception! current Already have a transaction!")
-			}
-			break
-		case tx.PROPAGATION_NESTED: //TODO REQUIRED 类似，增加 save point
-			if it.savePointStack == nil {
-				var savePointStack = tx.SavePointStack{}.New()
-				it.savePointStack = &savePointStack
-			}
-			if it.txStack.Len() > 0 {
-				t, p := it.txStack.Last()
-				it.txStack.Push(ctx, t, p)
-				return nil
-			} else {
-				var tx, err = it.db.Begin()
-				err = it.dbErrorPack(err)
-				if err == nil {
-					it.txStack.Push(ctx, tx, p)
-				}
-				return err
-			}
-		case tx.PROPAGATION_NOT_REQUIRED: //end
-			if it.txStack.Len() > 0 {
-				return errors.New("[GoMybatis] PROPAGATION_NOT_REQUIRED Nested transaction exception! current Already have a transaction!")
-			} else {
-				var tx, err = it.db.Begin()
-				err = it.dbErrorPack(err)
-				if err == nil {
-					it.txStack.Push(ctx, tx, p)
-				}
-				return err
-			}
-		default:
-			panic("[GoMybatis] Nested transaction exception! not support PROPAGATION in begin!")
+			return err
 		}
-
+	case tx.PROPAGATION_SUPPORTS: //end
+		if it.txStack.Len() > 0 {
+			return nil
+		} else {
+			//非事务
+			return nil
+		}
+	case tx.PROPAGATION_MANDATORY: //end
+		if it.txStack.Len() > 0 {
+			return nil
+		} else {
+			return errors.New("[GoMybatis] PROPAGATION_MANDATORY Nested transaction exception! current not have a transaction!")
+		}
+	case tx.PROPAGATION_REQUIRES_NEW:
+		if it.txStack.Len() > 0 {
+			//TODO stop old tx
+		}
+		//TODO new session(tx)
+		var db, e = sql.Open(it.driver, it.url)
+		if e != nil {
+			return e
+		}
+		var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem) //same PROPAGATION_REQUIRES_NEW
+		sess.WithContext(it.ctx)
+		it.session = &sess
+		break
+	case tx.PROPAGATION_NOT_SUPPORTED:
+		if it.txStack.Len() > 0 {
+			//TODO stop old tx
+		}
+		//TODO new session( no tx)
+		var db, e = sql.Open(it.driver, it.url)
+		if e != nil {
+			return e
+		}
+		var sess = LocalSession{}.New(it.driver, it.url, db, it.logSystem)
+		sess.WithContext(it.ctx)
+		it.session = &sess
+		break
+	case tx.PROPAGATION_NEVER: //END
+		if it.txStack.Len() > 0 {
+			return errors.New("[GoMybatis] PROPAGATION_NEVER  Nested transaction exception! current Already have a transaction!")
+		}
+		break
+	case tx.PROPAGATION_NESTED: //TODO REQUIRED 类似，增加 save point
+		if it.savePointStack == nil {
+			var savePointStack = tx.SavePointStack{}.New()
+			it.savePointStack = &savePointStack
+		}
+		if it.txStack.Len() > 0 {
+			t, p := it.txStack.Last()
+			it.txStack.Push(ctx, t, p)
+			return nil
+		} else {
+			var t, err = it.db.Begin()
+			err = it.dbErrorPack(err)
+			if err == nil {
+				it.txStack.Push(ctx, t, &p)
+			}
+			return err
+		}
+	case tx.PROPAGATION_NOT_REQUIRED: //end
+		if it.txStack.Len() > 0 {
+			return errors.New("[GoMybatis] PROPAGATION_NOT_REQUIRED Nested transaction exception! current Already have a transaction!")
+		} else {
+			var t, err = it.db.Begin()
+			err = it.dbErrorPack(err)
+			if err == nil {
+				it.txStack.Push(ctx, t, &p)
+			}
+			return err
+		}
+	default:
+		panic("[GoMybatis] Nested transaction exception! not support PROPAGATION in begin!")
 	}
 	return nil
 }

@@ -41,12 +41,21 @@ func (it *SessionFactorySession) Commit() error {
 	}
 	return it.Session.Commit()
 }
-func (it *SessionFactorySession) Begin(p *tx.Propagation) error {
+
+func (it *SessionFactorySession) Begin() error {
 	if it.Session == nil {
 		return utils.NewError("SessionFactorySession", " can not run Begin(),it.Session == nil")
 	}
-	return it.Session.Begin(p)
+	return it.Session.Begin()
 }
+
+func (it *SessionFactorySession) BeginTrans(p tx.Propagation) (err error) {
+	if it.Session == nil {
+		return utils.NewError("SessionFactorySession", " can not run Begin(),it.Session == nil")
+	}
+	return it.Session.BeginTrans(p)
+}
+
 func (it *SessionFactorySession) Close() {
 	var id = it.Id()
 	var s, _ = it.Factory.SessionMap.Load(id)

@@ -112,7 +112,11 @@ func (it *TempleteSession) Rollback() error {
 func (it *TempleteSession) Commit() error {
 	return nil
 }
-func (it *TempleteSession) Begin(p *tx.Propagation) error {
+func (it *TempleteSession) Begin() error {
+	return nil
+}
+
+func (it *TempleteSession) BeginTrans(p tx.Propagation) error {
 	return nil
 }
 func (it *TempleteSession) Close() {

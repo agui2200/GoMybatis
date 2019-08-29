@@ -100,7 +100,7 @@ func Test_txTracing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = session.Begin(nil) //开启事务
+	err = session.Begin() //开启事务
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func Test_insideTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = session.Begin(nil) //开启事务
+	err = session.Begin() //开启事务
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +146,7 @@ func Test_insideTx(t *testing.T) {
 	if e != nil {
 		panic(e)
 	}
-	err = session.Begin(nil)
+	err = session.Begin()
 	if err != nil {
 		t.Fatal(err)
 	}

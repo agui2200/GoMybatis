@@ -60,12 +60,12 @@ func AopProxyServiceValue(service reflect.Value, engine sessions.SessionEngine) 
 			}
 			session.WithContext(ctx)
 			if !haveTx {
-				var err = session.Begin(session.LastPROPAGATION())
+				var err = session.BeginTrans(*session.LastPROPAGATION())
 				if err != nil {
 					panic(err)
 				}
 			} else {
-				var err = session.Begin(&propagation)
+				var err = session.BeginTrans(propagation)
 				if err != nil {
 					panic(err)
 				}

@@ -231,7 +231,7 @@ func Test_local_Transation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = session.Begin(nil) //开启事务
+	err = session.Begin() //开启事务
 	if err != nil {
 		t.Fatal(err)
 	}

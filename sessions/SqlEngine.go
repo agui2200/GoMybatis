@@ -19,7 +19,8 @@ type Session interface {
 	Exec(sqlorArgs string) (*Result, error)
 	Rollback() error
 	Commit() error
-	Begin(p *tx.Propagation) error
+	Begin() error
+	BeginTrans(p tx.Propagation) error
 	Close()
 	LastPROPAGATION() *tx.Propagation
 	WithContext(ctx context.Context)
