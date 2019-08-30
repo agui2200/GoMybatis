@@ -38,7 +38,7 @@ func New() GoMybatisEngine {
 //根据sessionEngine写入到mapperPtr，value:指向mapper指针反射对象，xml：xml数据，sessionEngine：session引擎，enableLog:是否允许日志输出，log：日志实现
 func WriteMapperByValue(value reflect.Value, xmlBuffer []byte, sessionEngine sessions.SessionEngine) {
 	if value.Kind() != reflect.Ptr {
-		panic("AopProxy: AopProxy arg must be a pointer")
+		panic("WriteMapperByValue: value must be a pointer")
 	}
 	WriteMapper(value, xmlBuffer, sessionEngine)
 	sessionEngine.RegisterObj(value.Interface(), value.Type().Elem().Name())
@@ -49,7 +49,7 @@ func WriteMapperByValue(value reflect.Value, xmlBuffer []byte, sessionEngine ses
 func WriteMapperPtrByEngine(ptr interface{}, xmlBuffer []byte, sessionEngine sessions.SessionEngine) {
 	v := reflect.ValueOf(ptr)
 	if v.Kind() != reflect.Ptr {
-		panic("AopProxy: AopProxy arg must be a pointer")
+		panic("WriteMapperPtrByEngine: ptr must be a pointer")
 	}
 	WriteMapperByValue(v, xmlBuffer, sessionEngine)
 }
@@ -66,13 +66,19 @@ func WriteMapperPtrByEngine(ptr interface{}, xmlBuffer []byte, sessionEngine ses
 //func的结构体参数无需指定mapperParams的tag，框架会自动扫描它的属性，封装为map处理掉
 //使用WriteMapper函数设置代理后即可正常使用。
 func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.SessionEngine) {
+	if bean.IsNil() {
+		// 如果传递的是一个nil的type类型
+		panic("[GoMybatis] struct is nil invalid !")
+
+	}
 	beanCheck(bean)
 	var mapperTree = xml.LoadMapperXml(xmlBuffer)
 	sessionEngine.TempleteDecoder().DecodeTree(mapperTree, bean.Type())
 	//构建期使用的map，无需考虑并发安全
 	var methodXmlMap = makeMethodXmlMap(bean, mapperTree, sessionEngine.SqlBuilder())
 	var resultMaps = makeResultMaps(mapperTree)
-	var returnTypeMap = makeReturnTypeMap(bean.Elem().Type())
+	var returnTypeMap map[string]*ReturnType
+	returnTypeMap = makeReturnTypeMap(bean.Elem().Type())
 	var beanName = bean.Type().PkgPath() + bean.Type().String()
 
 	ProxyValue(bean, func(funcField reflect.StructField, field reflect.Value) buildResult {
