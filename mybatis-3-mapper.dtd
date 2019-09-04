@@ -26,6 +26,8 @@
                 tables  #REQUIRED
                 extends CDATA #IMPLIED
                 autoMapping (true|false) #IMPLIED
+                soft_deleted CDATA #IMPLIED
+                timestamps CDATA #IMPLIED
                 >
 
         <!ELEMENT constructor (idArg*,arg*)>
@@ -118,10 +120,10 @@
                 resultMap CDATA #IMPLIED
                 resultType CDATA #IMPLIED
 
-                
+
                 lang CDATA #IMPLIED
-                
-                
+
+
                 >
 
         <!ELEMENT selectTemplete (#PCDATA | include | trim | where | set | foreach | choose | if | bind)*>
@@ -143,11 +145,11 @@
         <!ELEMENT insert (#PCDATA | include | trim | where | set | foreach | choose | if | bind)*>
         <!ATTLIST insert
                 id CDATA #REQUIRED
-               
-                
+
+
                 useGeneratedKeys (true|false) #IMPLIED
-                
-                
+
+
                 lang CDATA #IMPLIED
                 >
 
@@ -163,11 +165,11 @@
         <!ELEMENT update (#PCDATA | include | trim | where | set | foreach | choose | if | bind)*>
         <!ATTLIST update
                 id CDATA #REQUIRED
-               
-                
+
+
                 useGeneratedKeys (true|false) #IMPLIED
-                
-                
+
+
                 lang CDATA #IMPLIED
                 >
         <!--sets指定值(例如 sets="name?name = #{name}"  )会更新对应值，否则为""设置全部属性-->
@@ -188,8 +190,8 @@
         <!ELEMENT delete (#PCDATA | include | trim | where | set | foreach | choose | if | bind)*>
         <!ATTLIST delete
                 id CDATA #REQUIRED
-               
-                
+
+
                 lang CDATA #IMPLIED
                 >
         <!ELEMENT deleteTemplete (#PCDATA | include | trim | where | set | foreach | choose | if | bind)*>
@@ -219,7 +221,7 @@
         <!ATTLIST sql
                 id CDATA #REQUIRED
                 lang CDATA #IMPLIED
-                
+
                 >
 
         <!ELEMENT trim (#PCDATA | include | trim | where | set | foreach | choose | if | bind)*>

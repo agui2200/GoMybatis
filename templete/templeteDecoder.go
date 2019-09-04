@@ -11,11 +11,42 @@ import (
 )
 
 var equalOperator = []string{"/", "+", "-", "*", "**", "|", "^", "&", "%", "<", ">", ">=", "<=", " in ", " not in ", " or ", "||", " and ", "&&", "==", "!="}
+var autoTimestamps = map[SQLEvent]TimestampsData{
+	_sqlCreated: {
+		Column:   "created_at",
+		Property: "createdAt",
+		LangType: "time.Time",
+	},
+	_sqlUpdated: {
+		Column:   "updated_at",
+		Property: "updatedAt",
+		LangType: "time.Time",
+	},
+	_sqlDeleted: {
+		Column:   "deleted_at",
+		Property: "deletedAt",
+		LangType: "time.Time",
+	},
+}
 
 /**
 TODO sqlTemplete解析器，目前直接操作*etree.Element实现，后期应该改成操作xml，换取更好的维护性
 */
 type GoMybatisTempleteDecoder struct {
+}
+
+type SQLEvent int
+
+const (
+	_sqlCreated SQLEvent = iota
+	_sqlUpdated
+	_sqlDeleted
+)
+
+type TimestampsData struct {
+	Column   string
+	Property string
+	LangType string
 }
 
 type LogicDeleteData struct {
@@ -102,7 +133,22 @@ func printElement(element *etree.Element, v *string) {
 }
 
 func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *etree.Element, tree map[string]etree.Token) (bool, error) {
+	var tables = mapper.SelectAttrValue("tables", "")
+	var wheres = mapper.SelectAttrValue("wheres", "")
+	var columns = mapper.SelectAttrValue("columns", "")
+	var inserts = mapper.SelectAttrValue("inserts", "")
 
+	var resultMap = mapper.SelectAttrValue("resultMap", "")
+
+	if resultMap == "" {
+		resultMap = "BaseResultMap"
+	}
+	var resultMapData = tree[resultMap].(*etree.Element)
+	if resultMapData == nil {
+		panic(utils.NewError("GoMybatisTempleteDecoder", "resultMap not define! id = ", resultMap))
+	}
+	checkTablesValue(mapper, &tables, resultMapData)
+	var logic = it.decodeLogicDelete(resultMapData)
 	switch mapper.Tag {
 
 	case "selectTemplete":
@@ -112,22 +158,6 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		if id == "" {
 			mapper.CreateAttr("id", "selectTemplete")
 		}
-
-		var tables = mapper.SelectAttrValue("tables", "")
-		var columns = mapper.SelectAttrValue("columns", "")
-		var wheres = mapper.SelectAttrValue("wheres", "")
-
-		var resultMap = mapper.SelectAttrValue("resultMap", "")
-		if resultMap == "" {
-			resultMap = "BaseResultMap"
-		}
-		var resultMapData = tree[resultMap].(*etree.Element)
-		if resultMapData == nil {
-			panic(utils.NewError("GoMybatisTempleteDecoder", "resultMap not define! id = ", resultMap))
-		}
-		checkTablesValue(mapper, &tables, resultMapData)
-
-		var logic = it.decodeLogicDelete(resultMapData)
 
 		var sql bytes.Buffer
 		sql.WriteString("select ")
@@ -153,25 +183,6 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		if id == "" {
 			mapper.CreateAttr("id", "insertTemplete")
 		}
-
-		var tables = mapper.SelectAttrValue("tables", "")
-		var inserts = mapper.SelectAttrValue("inserts", "")
-
-		var resultMap = mapper.SelectAttrValue("resultMap", "")
-		if resultMap == "" {
-			resultMap = "BaseResultMap"
-		}
-		if inserts == "" {
-			inserts = "*?*"
-		}
-
-		var resultMapData = tree[resultMap].(*etree.Element)
-		if resultMapData == nil {
-			panic(utils.NewError("GoMybatisTempleteDecoder", "resultMap not define! id = ", resultMap))
-		}
-		checkTablesValue(mapper, &tables, resultMapData)
-
-		var logic = it.decodeLogicDelete(resultMapData)
 
 		var collectionName = it.DecodeCollectionName(method)
 
@@ -318,23 +329,6 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 			mapper.CreateAttr("id", "updateTemplete")
 		}
 
-		var tables = mapper.SelectAttrValue("tables", "")
-		var columns = mapper.SelectAttrValue("sets", "")
-		var wheres = mapper.SelectAttrValue("wheres", "")
-
-		var resultMap = mapper.SelectAttrValue("resultMap", "")
-		if resultMap == "" {
-			resultMap = "BaseResultMap"
-		}
-
-		var resultMapData = tree[resultMap].(*etree.Element)
-		if resultMapData == nil {
-			panic(utils.NewError("GoMybatisTempleteDecoder", "resultMap not define! id = ", resultMap))
-		}
-		checkTablesValue(mapper, &tables, resultMapData)
-
-		var logic = it.decodeLogicDelete(resultMapData)
-
 		var versionData = it.decodeVersionData(resultMapData)
 
 		var sql bytes.Buffer
@@ -380,22 +374,6 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		if id == "" {
 			mapper.CreateAttr("id", "deleteTemplete")
 		}
-
-		var tables = mapper.SelectAttrValue("tables", "")
-		var wheres = mapper.SelectAttrValue("wheres", "")
-
-		var resultMap = mapper.SelectAttrValue("resultMap", "")
-		if resultMap == "" {
-			resultMap = "BaseResultMap"
-		}
-
-		var resultMapData = tree[resultMap].(*etree.Element)
-		if resultMapData == nil {
-			panic(utils.NewError("GoMybatisTempleteDecoder", "resultMap not define! id = ", resultMap))
-		}
-		checkTablesValue(mapper, &tables, resultMapData)
-
-		var logic = it.decodeLogicDelete(resultMapData)
 		if logic.Enable {
 			//enable logic delete
 			var sql bytes.Buffer

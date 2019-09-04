@@ -95,10 +95,7 @@ func init() {
 	//读取mapper xml文件
 	bytes, _ := ioutil.ReadFile("Example_ActivityMapper.xml")
 	//设置对应的mapper xml文件
-	testStruct := struct {
-		mapper ExampleActivityMapper
-	}{}
-	engine.WriteMapperPtr(&testStruct.mapper, bytes)
+	engine.WriteMapperPtr(&exampleActivityMapper, bytes)
 }
 
 //插入
