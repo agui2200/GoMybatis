@@ -139,10 +139,17 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 	}
 	checkTablesValue(mapper, &tables, resultMapData)
 	softDeleteValue := resultMapData.SelectAttrValue("soft_deleted", "")
-	var enbaleSoftDelete bool
+	autoTimestampsValue := resultMapData.SelectAttrValue("timestamps", "")
+	var enableSoftDelete bool
+	var enableAutoTimestamps bool
 	if softDeleteValue == "true" {
-		enbaleSoftDelete = true
+		enableSoftDelete = true
 	}
+
+	if autoTimestampsValue == "true" {
+		enableAutoTimestamps = true
+	}
+
 	switch mapper.Tag {
 
 	case "selectTemplete":
@@ -166,7 +173,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 			mapper.Child = append(mapper.Child, &etree.CharData{
 				Data: sql.String(),
 			})
-			it.DecodeWheres(wheres, mapper, nil, enbaleSoftDelete)
+			it.DecodeWheres(wheres, mapper, nil, enableSoftDelete)
 		}
 		break
 	case "insertTemplete": //已支持批量
@@ -198,22 +205,29 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 			},
 			Child: []etree.Token{},
 		}
+		//args
+		var tempElement = etree.Element{
+			Tag:   xml.Element_Trim,
+			Attr:  []etree.Attr{{Key: "prefix", Value: "values ("}, {Key: "suffix", Value: ")"}, {Key: "suffixOverrides", Value: ","}},
+			Child: []etree.Token{},
+		}
+		if inserts == "" {
+			inserts = "*"
+		}
 
-		//cloumns
-		if collectionName != "" {
+		switch {
+		case collectionName == "":
 			for _, v := range resultMapData.ChildElements() {
-				if enbaleSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
-					continue
-				}
-				if inserts == "*" || inserts == "*?*" {
+				// 加入创建时间
+				if enableAutoTimestamps && v.SelectAttrValue("property", "") == autoTimestamps[_sqlCreated].Property {
 					trimColumn.Child = append(trimColumn.Child, &etree.CharData{
-						Data: v.SelectAttrValue("column", "") + ",",
+						Data: autoTimestamps[_sqlCreated].Column + ",",
+					})
+					tempElement.Child = append(tempElement.Child, &etree.CharData{
+						Data: " now() ,",
 					})
 				}
-			}
-		} else {
-			for _, v := range resultMapData.ChildElements() {
-				if enbaleSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
+				if enableSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
 					continue
 				}
 				if inserts == "*?*" {
@@ -228,29 +242,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 							},
 						},
 					})
-				} else if inserts == "*" {
-					trimColumn.Child = append(trimColumn.Child, &etree.CharData{
-						Data: v.SelectAttrValue("column", "") + ",",
-					})
-				}
-			}
-		}
 
-		mapper.Child = append(mapper.Child, &trimColumn)
-
-		//args
-		var tempElement = etree.Element{
-			Tag:   xml.Element_Trim,
-			Attr:  []etree.Attr{{Key: "prefix", Value: "values ("}, {Key: "suffix", Value: ")"}, {Key: "suffixOverrides", Value: ","}},
-			Child: []etree.Token{},
-		}
-
-		if collectionName == "" {
-			for _, v := range resultMapData.ChildElements() {
-				if enbaleSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
-					continue
-				}
-				if inserts == "*?*" {
 					tempElement.Child = append(tempElement.Child, &etree.Element{
 						Tag:  xml.Element_If,
 						Attr: []etree.Attr{{Key: "test", Value: it.makeIfNotNull(v.SelectAttrValue("property", ""))}},
@@ -261,12 +253,36 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 						},
 					})
 				} else if inserts == "*" {
+					trimColumn.Child = append(trimColumn.Child, &etree.CharData{
+						Data: v.SelectAttrValue("column", "") + ",",
+					})
 					tempElement.Child = append(tempElement.Child, &etree.CharData{
 						Data: "#{" + v.SelectAttrValue("property", "") + "},",
 					})
 				}
 			}
-		} else {
+			mapper.Child = append(mapper.Child, &trimColumn)
+			mapper.Child = append(mapper.Child, &tempElement)
+		case collectionName != "":
+			for _, v := range resultMapData.ChildElements() {
+				// 加入创建时间
+				if enableAutoTimestamps && v.SelectAttrValue("property", "") == autoTimestamps[_sqlCreated].Property {
+					trimColumn.Child = append(trimColumn.Child, &etree.CharData{
+						Data: autoTimestamps[_sqlCreated].Column + ",",
+					})
+					continue
+				}
+				if enableSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
+					continue
+				}
+				if inserts == "*" || inserts == "*?*" {
+					trimColumn.Child = append(trimColumn.Child, &etree.CharData{
+						Data: v.SelectAttrValue("column", "") + ",",
+					})
+				}
+			}
+			mapper.Child = append(mapper.Child, &trimColumn)
+
 			tempElement.Attr = []etree.Attr{}
 			tempElement.Tag = xml.Element_Foreach
 			tempElement.Attr = []etree.Attr{{Key: "open", Value: "values "}, {Key: "close", Value: ""}, {Key: "separator", Value: ","}, {Key: "collection", Value: collectionName}}
@@ -301,6 +317,12 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 					}
 				}
 				var value = prefix + "#{" + "item." + defProperty + "}"
+				if enableSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
+					value = ""
+				}
+				if enableAutoTimestamps && v.SelectAttrValue("property", "") == autoTimestamps[_sqlCreated].Property {
+					value = " now() "
+				}
 				if index+1 == len(resultMapData.ChildElements()) {
 					value += ")"
 				} else {
@@ -310,9 +332,8 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 					Data: value,
 				})
 			}
+			mapper.Child = append(mapper.Child, &tempElement)
 		}
-		mapper.Child = append(mapper.Child, &tempElement)
-
 		break
 	case "updateTemplete":
 		mapper.Tag = xml.Element_Update
@@ -344,21 +365,21 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 				}
 			}
 			columns = strings.Trim(columns, ",")
-			it.DecodeSets(columns, mapper, versionData, enbaleSoftDelete)
+			it.DecodeSets(columns, mapper, versionData, enableSoftDelete)
 		} else {
 			mapper.Child = append(mapper.Child, &etree.CharData{
 				Data: sql.String(),
 			})
 			sql.Reset()
-			it.DecodeSets(columns, mapper, versionData, enbaleSoftDelete)
+			it.DecodeSets(columns, mapper, versionData, enableSoftDelete)
 		}
 
-		if len(wheres) > 0 || enbaleSoftDelete {
+		if len(wheres) > 0 || enableSoftDelete {
 			//sql.WriteString(" where ")
 			mapper.Child = append(mapper.Child, &etree.CharData{
 				Data: sql.String(),
 			})
-			it.DecodeWheres(wheres, mapper, versionData, enbaleSoftDelete)
+			it.DecodeWheres(wheres, mapper, versionData, enableSoftDelete)
 		}
 		break
 	case "deleteTemplete":
@@ -368,7 +389,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		if id == "" {
 			mapper.CreateAttr("id", "deleteTemplete")
 		}
-		if enbaleSoftDelete {
+		if enableSoftDelete {
 			//enable logic delete
 			var sql bytes.Buffer
 			sql.WriteString("update ")
@@ -378,7 +399,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 				Data: sql.String(),
 			})
 			sql.Reset()
-			if enbaleSoftDelete {
+			if enableSoftDelete {
 				var appendAdd = ""
 				var item = &etree.CharData{
 					Data: appendAdd + autoTimestamps[_sqlDeleted].Column + " = now()",
@@ -391,7 +412,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 					Data: sql.String(),
 				})
 				//TODO decode wheres
-				it.DecodeWheres(wheres, mapper, nil, enbaleSoftDelete)
+				it.DecodeWheres(wheres, mapper, nil, enableSoftDelete)
 			}
 			break
 		} else {
@@ -405,7 +426,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 					Data: sql.String(),
 				})
 				//TODO decode wheres
-				it.DecodeWheres(wheres, mapper, nil, enbaleSoftDelete)
+				it.DecodeWheres(wheres, mapper, nil, enableSoftDelete)
 			}
 		}
 
