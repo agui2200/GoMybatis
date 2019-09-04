@@ -19,6 +19,7 @@
                 logic_enable="true"
                 logic_undelete="1"
                 logic_deleted="0"/>
+        <result column="deleted_at" property="deletedAt" langType="time.Time"/>
     </resultMap>
 
     <!--模板标签: columns wheres sets 支持逗号,分隔表达式，*?* 为判空表达式-->

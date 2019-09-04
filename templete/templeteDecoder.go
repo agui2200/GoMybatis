@@ -49,16 +49,6 @@ type TimestampsData struct {
 	LangType string
 }
 
-type LogicDeleteData struct {
-	Column   string
-	Property string
-	LangType string
-
-	Enable         bool
-	Deleted_value  string
-	Undelete_value string
-}
-
 type VersionData struct {
 	Column   string
 	Property string
@@ -148,7 +138,11 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		panic(utils.NewError("GoMybatisTempleteDecoder", "resultMap not define! id = ", resultMap))
 	}
 	checkTablesValue(mapper, &tables, resultMapData)
-	var logic = it.decodeLogicDelete(resultMapData)
+	softDeleteValue := resultMapData.SelectAttrValue("soft_deleted", "")
+	var enbaleSoftDelete bool
+	if softDeleteValue == "true" {
+		enbaleSoftDelete = true
+	}
 	switch mapper.Tag {
 
 	case "selectTemplete":
@@ -172,8 +166,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 			mapper.Child = append(mapper.Child, &etree.CharData{
 				Data: sql.String(),
 			})
-			//TODO decode wheres
-			it.DecodeWheres(wheres, mapper, logic, nil)
+			it.DecodeWheres(wheres, mapper, nil, enbaleSoftDelete)
 		}
 		break
 	case "insertTemplete": //已支持批量
@@ -209,6 +202,9 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		//cloumns
 		if collectionName != "" {
 			for _, v := range resultMapData.ChildElements() {
+				if enbaleSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
+					continue
+				}
 				if inserts == "*" || inserts == "*?*" {
 					trimColumn.Child = append(trimColumn.Child, &etree.CharData{
 						Data: v.SelectAttrValue("column", "") + ",",
@@ -217,7 +213,10 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 			}
 		} else {
 			for _, v := range resultMapData.ChildElements() {
-				if collectionName == "" && inserts == "*?*" {
+				if enbaleSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
+					continue
+				}
+				if inserts == "*?*" {
 					trimColumn.Child = append(trimColumn.Child, &etree.Element{
 						Tag: xml.Element_If,
 						Attr: []etree.Attr{
@@ -248,10 +247,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 
 		if collectionName == "" {
 			for _, v := range resultMapData.ChildElements() {
-				if logic.Enable && v.SelectAttrValue("property", "") == logic.Property {
-					tempElement.Child = append(tempElement.Child, &etree.CharData{
-						Data: logic.Undelete_value + ",",
-					})
+				if enbaleSoftDelete && v.SelectAttrValue("property", "") == autoTimestamps[_sqlDeleted].Property {
 					continue
 				}
 				if inserts == "*?*" {
@@ -305,9 +301,6 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 					}
 				}
 				var value = prefix + "#{" + "item." + defProperty + "}"
-				if logic.Enable && v.SelectAttrValue("property", "") == logic.Property {
-					value = `'` + logic.Undelete_value + "'"
-				}
 				if index+1 == len(resultMapData.ChildElements()) {
 					value += ")"
 				} else {
@@ -351,20 +344,21 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 				}
 			}
 			columns = strings.Trim(columns, ",")
-			it.DecodeSets(columns, mapper, LogicDeleteData{}, versionData)
+			it.DecodeSets(columns, mapper, versionData, enbaleSoftDelete)
 		} else {
 			mapper.Child = append(mapper.Child, &etree.CharData{
 				Data: sql.String(),
 			})
 			sql.Reset()
-			it.DecodeSets(columns, mapper, LogicDeleteData{}, versionData)
+			it.DecodeSets(columns, mapper, versionData, enbaleSoftDelete)
 		}
-		if len(wheres) > 0 || logic.Enable {
+
+		if len(wheres) > 0 || enbaleSoftDelete {
 			//sql.WriteString(" where ")
 			mapper.Child = append(mapper.Child, &etree.CharData{
 				Data: sql.String(),
 			})
-			it.DecodeWheres(wheres, mapper, logic, versionData)
+			it.DecodeWheres(wheres, mapper, versionData, enbaleSoftDelete)
 		}
 		break
 	case "deleteTemplete":
@@ -374,7 +368,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 		if id == "" {
 			mapper.CreateAttr("id", "deleteTemplete")
 		}
-		if logic.Enable {
+		if enbaleSoftDelete {
 			//enable logic delete
 			var sql bytes.Buffer
 			sql.WriteString("update ")
@@ -384,14 +378,20 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 				Data: sql.String(),
 			})
 			sql.Reset()
-			it.DecodeSets("", mapper, logic, nil)
+			if enbaleSoftDelete {
+				var appendAdd = ""
+				var item = &etree.CharData{
+					Data: appendAdd + autoTimestamps[_sqlDeleted].Column + " = now()",
+				}
+				mapper.Child = append(mapper.Child, item)
+			}
 			if len(wheres) > 0 {
 				//sql.WriteString(" where ")
 				mapper.Child = append(mapper.Child, &etree.CharData{
 					Data: sql.String(),
 				})
 				//TODO decode wheres
-				it.DecodeWheres(wheres, mapper, logic, nil)
+				it.DecodeWheres(wheres, mapper, nil, enbaleSoftDelete)
 			}
 			break
 		} else {
@@ -405,7 +405,7 @@ func (it *GoMybatisTempleteDecoder) Decode(method *reflect.StructField, mapper *
 					Data: sql.String(),
 				})
 				//TODO decode wheres
-				it.DecodeWheres(wheres, mapper, LogicDeleteData{}, nil)
+				it.DecodeWheres(wheres, mapper, nil, enbaleSoftDelete)
 			}
 		}
 
@@ -425,16 +425,16 @@ func checkTablesValue(mapper *etree.Element, tables *string, resultMapData *etre
 }
 
 //解码逗号分隔的where
-func (it *GoMybatisTempleteDecoder) DecodeWheres(arg string, mapper *etree.Element, logic LogicDeleteData, versionData *VersionData) {
+func (it *GoMybatisTempleteDecoder) DecodeWheres(arg string, mapper *etree.Element, versionData *VersionData, softDeleted bool) {
 	var whereRoot = &etree.Element{
 		Tag:   xml.Element_where,
 		Attr:  []etree.Attr{},
 		Child: []etree.Token{},
 	}
-	if logic.Enable == true {
+	if softDeleted {
 		var appendAdd = ""
 		var item = &etree.CharData{
-			Data: appendAdd + logic.Column + " = " + logic.Undelete_value,
+			Data: appendAdd + autoTimestamps[_sqlDeleted].Column + " is null",
 		}
 		whereRoot.Child = append(whereRoot.Child, item)
 	}
@@ -483,7 +483,7 @@ func (it *GoMybatisTempleteDecoder) DecodeWheres(arg string, mapper *etree.Eleme
 	mapper.Child = append(mapper.Child, whereRoot)
 }
 
-func (it *GoMybatisTempleteDecoder) DecodeSets(arg string, mapper *etree.Element, logic LogicDeleteData, versionData *VersionData) {
+func (it *GoMybatisTempleteDecoder) DecodeSets(arg string, mapper *etree.Element, versionData *VersionData, softDeleted bool) {
 	var sets = strings.Split(arg, ",")
 	for index, v := range sets {
 		if v == "" {
@@ -514,16 +514,6 @@ func (it *GoMybatisTempleteDecoder) DecodeSets(arg string, mapper *etree.Element
 			mapper.Child = append(mapper.Child, item)
 		}
 	}
-	if logic.Enable == true {
-		var appendAdd = ""
-		if len(sets) >= 1 && arg != "" {
-			appendAdd = ","
-		}
-		var item = &etree.CharData{
-			Data: appendAdd + logic.Column + " = " + logic.Deleted_value,
-		}
-		mapper.Child = append(mapper.Child, item)
-	}
 	if versionData != nil {
 		var appendAdd = ""
 		if len(sets) >= 1 && arg != "" {
@@ -531,6 +521,16 @@ func (it *GoMybatisTempleteDecoder) DecodeSets(arg string, mapper *etree.Element
 		}
 		var item = &etree.CharData{
 			Data: appendAdd + versionData.Column + " = #{" + versionData.Property + "+1}",
+		}
+		mapper.Child = append(mapper.Child, item)
+	}
+	if softDeleted {
+		var appendAdd = ""
+		if len(sets) >= 1 && arg != "" {
+			appendAdd = ","
+		}
+		var item = &etree.CharData{
+			Data: appendAdd + autoTimestamps[_sqlDeleted].Column + " = null",
 		}
 		mapper.Child = append(mapper.Child, item)
 	}
@@ -546,35 +546,6 @@ func (it *GoMybatisTempleteDecoder) makeIfNotNull(arg string) string {
 		}
 	}
 	return arg + ` != nil`
-}
-
-func (it *GoMybatisTempleteDecoder) decodeLogicDelete(xml *etree.Element) LogicDeleteData {
-	if xml == nil || len(xml.Child) == 0 {
-		return LogicDeleteData{}
-	}
-	var logicData = LogicDeleteData{}
-	for _, v := range xml.ChildElements() {
-		if v.SelectAttrValue("logic_enable", "") == "true" {
-			logicData.Enable = true
-			logicData.Deleted_value = v.SelectAttrValue("logic_deleted", "")
-			logicData.Undelete_value = v.SelectAttrValue("logic_undelete", "")
-			logicData.Column = v.SelectAttrValue("column", "")
-			logicData.Property = v.SelectAttrValue("property", "")
-			logicData.LangType = v.SelectAttrValue("langType", "")
-			//check
-			if logicData.Deleted_value == "" {
-				panic(utils.NewError("GoMybatisTempleteDecoder", `<resultMap> logic_deleted="" can't be empty !`))
-			}
-			if logicData.Undelete_value == "" {
-				panic(utils.NewError("GoMybatisTempleteDecoder", `<resultMap> logic_undelete="" can't be empty !`))
-			}
-			if logicData.Undelete_value == logicData.Deleted_value {
-				panic(utils.NewError("GoMybatisTempleteDecoder", `<resultMap> logic_deleted value can't be logic_undelete value!`))
-			}
-			break
-		}
-	}
-	return logicData
 }
 
 func (it *GoMybatisTempleteDecoder) decodeVersionData(xml *etree.Element) *VersionData {
