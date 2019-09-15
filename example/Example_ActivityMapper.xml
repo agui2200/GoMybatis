@@ -27,7 +27,7 @@
     <!--插入模板:默认id="insertTemplete,test="field != null",where自动设置逻辑删除字段,支持批量插入" -->
     <insertTemplete/>
     <!--查询模板:默认id="selectTemplete,where自动设置逻辑删除字段-->
-    <selectTemplete wheres="name?name = #{name}"/>
+    <selectTemplete wheres="name?name = #{name}" resultMap="BaseResultMap"/>
     <!--更新模板:默认id="updateTemplete,set自动设置乐观锁版本号-->
     <updateTemplete sets="name?name = #{name},remark?remark=#{remark},pcLink?pc_link=#{pcLink}" wheres="id?id = #{id}"/>
     <!--删除模板:默认id="deleteTemplete,where自动设置逻辑删除字段-->

@@ -308,7 +308,7 @@ func TestInsertTemplete(t *testing.T) {
 		return
 	}
 	//使用mapper
-	var result, err = exampleActivityMapper.InsertTemplete(Activity{Id: "178", Name: "test_insret", CreateTime: time.Now(), DeleteFlag: 1})
+	var result, err = exampleActivityMapper.InsertTemplete(Activity{Id: "179", Name: "test_insret", PcLink: "www.163.com", CreateTime: time.Now(), DeleteFlag: 1})
 	if err != nil {
 		panic(err)
 	}

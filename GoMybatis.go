@@ -73,14 +73,16 @@ func WriteMapper(bean reflect.Value, xmlBuffer []byte, sessionEngine sessions.Se
 	}
 	beanCheck(bean)
 	var mapperTree = xml.LoadMapperXml(xmlBuffer)
-	sessionEngine.TempleteDecoder().DecodeTree(mapperTree, bean.Type())
+	err := sessionEngine.TempleteDecoder().DecodeTree(mapperTree, bean.Type())
+	if err != nil {
+		panic("[GoMybatis] " + err.Error())
+	}
 	//构建期使用的map，无需考虑并发安全
 	var methodXmlMap = makeMethodXmlMap(bean, mapperTree, sessionEngine.SqlBuilder())
 	var resultMaps = makeResultMaps(mapperTree)
 	var returnTypeMap map[string]*ReturnType
 	returnTypeMap = makeReturnTypeMap(bean.Elem().Type())
 	var beanName = bean.Type().PkgPath() + bean.Type().String()
-
 	ProxyValue(bean, func(funcField reflect.StructField, field reflect.Value) buildResult {
 		//构建期
 		var funcName = funcField.Name
@@ -262,7 +264,7 @@ func makeResultMaps(xmls map[string]etree.Token) map[string]map[string]*sqlbuild
 						Property: elementItem.SelectAttrValue("property", ""),
 						GoType:   elementItem.SelectAttrValue("goType", ""),
 					}
-					resultPropertyMap[property.Column] = &property
+					resultPropertyMap[property.Property] = &property
 				}
 				resultMaps[xmlItem.SelectAttrValue("id", "")] = resultPropertyMap
 			}
